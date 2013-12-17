@@ -2,9 +2,9 @@ SHELL = /bin/bash
 libdir = /usr/lib
 PURPLE_MAJOR_VERSION = 2
 libpurple_dir = ./libpurple/
-libnull_la_OBJECTS = nullprpl.lo udp.lo protocol.lo json.lo tcp.lo
-LTLIBRARIES = libnull.la
-pkg_LTLIBRARIES = libnull.la
+libsms_la_OBJECTS = smsprpl.lo udp.lo protocol.lo json.lo tcp.lo
+LTLIBRARIES = libsms.la
+pkg_LTLIBRARIES = libsms.la
 MKDIR_P = /bin/mkdir -p
 INSTALL = /usr/bin/install -c
 pkgdir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
@@ -21,8 +21,8 @@ mv = mv -f
 GLIB_LIBS = -Wl,--export-dynamic -pthread -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0  
 GLIB_CFLAGS = -pthread -I/usr/include/glib-2.0 -I/usr/lib/i386-linux-gnu/glib-2.0/include  
 DEBUG_CFLAGS = -Wall  -DPURPLE_DISABLE_DEPRECATED -DPIDGIN_DISABLE_DEPRECATED -DFINCH_DISABLE_DEPRECATED -DGNT_DISABLE_DEPRECATED -Waggregate-return -Wcast-align -Wdeclaration-after-statement -Wendif-labels -Werror-implicit-function-declaration -Wextra -Wno-sign-compare -Wno-unused-parameter -Wformat-security -Werror=format-security -Winit-self -Wmissing-declarations -Wmissing-noreturn -Wmissing-prototypes -Wpointer-arith -Wundef -Wp,-D_FORTIFY_SOURCE=2
-libnull_la_LDFLAGS = -module -avoid-version
-libnull_la_LIBADD = $(GLIB_LIBS)
+libsms_la_LDFLAGS = -module -avoid-version
+libsms_la_LIBADD = $(GLIB_LIBS)
 LIBS = -lm -lnsl -lresolv 
 strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
 
@@ -33,13 +33,13 @@ LIBTOOL = $(SHELL) $(libpurple_dir)/libtool --silent
 LTCOMPILE = $(LIBTOOL)  --tag=CC $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
 			$(INCLUDES)  $(CPPFLAGS) $(CFLAGS)
 
-libnull_la_LINK = $(LIBTOOL)  --tag=CC $(LIBTOOLFLAGS) --mode=link $(CCLD) $(CFLAGS) \
-	$(libnull_la_LDFLAGS) $(LDFLAGS) -o $@
+libsms_la_LINK = $(LIBTOOL)  --tag=CC $(LIBTOOLFLAGS) --mode=link $(CCLD) $(CFLAGS) \
+	$(libsms_la_LDFLAGS) $(LDFLAGS) -o $@
 
 all: Makefile $(LTLIBRARIES)
 
-libnull.la: $(libnull_la_OBJECTS) 
-			$(V_CCLD)$(libnull_la_LINK) -rpath $(pkgdir) $(libnull_la_OBJECTS) $(libnull_la_LIBADD) $(LIBS)
+libsms.la: $(libsms_la_OBJECTS) 
+			$(V_CCLD)$(libsms_la_LINK) -rpath $(pkgdir) $(libsms_la_OBJECTS) $(libsms_la_LIBADD) $(LIBS)
 
 %.lo: %.c
 	$(V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

@@ -43,6 +43,10 @@ typedef struct protocol_parser {
 } protocol_parser_t;
 
 
+json_printer *protocol_get_print(UdpSocket *sock);
+
+int protocol_send_contact_req(UdpSocket *sock);
+
 int protocol_send_auth(UdpSocket *sock, const char *usr, const char *pwd);
 
 int protocol_send_msg(UdpSocket *sock, const char *to, const char *msg);
