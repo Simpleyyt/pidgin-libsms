@@ -1,0 +1,5 @@
+{
+    "type" : "msg",
+    "msg"  : "sms test",
+    "who"  : "123"
+}
