@@ -195,7 +195,7 @@ smsprpl.lo: smsprpl.c /usr/lib/gcc/i686-linux-gnu/4.6/include/stdarg.h \
  libpurple/cmds.h libpurple/conversation.h libpurple/connection.h \
  libpurple/notify.h libpurple/privacy.h libpurple/prpl.h \
  libpurple/roomlist.h libpurple/status.h libpurple/util.h \
- libpurple/version.h udp.h tcp.h protocol.h json.h smsprpl.h \
+ libpurple/version.h udp.h protocol.h json.h smsprpl.h \
  libpurple/network.h libpurple/eventloop.h libpurple/network.c \
  libpurple/internal.h /usr/include/arpa/nameser.h \
  /usr/include/i386-linux-gnu/sys/param.h /usr/include/linux/param.h \
@@ -767,8 +767,6 @@ libpurple/util.h:
 libpurple/version.h:
 
 udp.h:
-
-tcp.h:
 
 protocol.h:
 

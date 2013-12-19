@@ -3,10 +3,15 @@
 
 #include <stdio.h>
 #include "udp.h"
-#include "tcp.h"
 #include "json.h"
 
 #define PROTOCOL_TAG "protocol"
+
+#define VAL_EX(V, N)        JSON_KEY, #V, N
+#define VAL(V)              VAL_EX(V, strlen(#V)) 
+#define KEY_EX(K, N)        JSON_STRING, #K, N
+#define KEY(K)              KEY_EX(K,strlen(#K)
+#define VAL_KEY(V, K)       VAL(V), KEY(K)
 
 #define protocol_debug_info(format, ...) fprintf(stdout, "%s:", PROTOCOL_TAG);\
                                          fprintf(stdout, format,## __VA_ARGS__);\
@@ -26,6 +31,13 @@ struct json_val_elem {
     uint32_t key_length;
     struct json_val *val;
 };
+
+typedef struct _PrplHeader {
+    char *from;
+    char *to;
+    char *ver;
+    char *key;
+} PrplHeader;
 
 typedef struct json_val {
     int type;
@@ -59,8 +71,6 @@ int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32
 void protocol_parser_free (protocol_parser_t *parser);
 
 int protocol_parser_is_done (protocol_parser_t *parser);
-
-int protocol_get_int_val (json_val_t *val, ...);
 
 char *protocol_get_string_val (json_val_t *val, ...);
 

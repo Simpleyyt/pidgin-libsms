@@ -67,7 +67,6 @@
 #include "util.h"
 #include "version.h"
 #include "udp.h"
-#include "tcp.h"
 #include "protocol.h"
 #include "json.h"
 #include "smsprpl.h"

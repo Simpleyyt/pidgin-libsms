@@ -8,7 +8,29 @@ static void *tree_create_data(int type, const char *data, uint32_t length);
 static int tree_append(void *structure, char *key, uint32_t key_length, void *obj);
 json_val_t *protocol_get_val_by_list (json_val_t *val, va_list ap); 
 
-json_printer *protocol_get_print(UdpSocket *sock)
+int protocol_append_elem(json_val_t *val_t, const char *key, const char *val)
+{
+    json_val_t *elem_val = tree_create_data(JSON_STRING, val, 1);
+    return tree_append(val_t, key, strlen(key), elem_val);
+}
+
+int free_val_t(json_val_t *val)
+{
+    int i;
+    int key_length = val->length;
+    if (val->type == JSON_OBJECT) {
+        for (i = 0;i < key_length;i++) {
+            val_elem = val->u.object[i];
+           if (strcmp(val_elem->key, key) == 0) {
+                protocol_debug_info("Found key: %s", val_elem->key);
+                val = val_elem->val;
+                break;
+            }
+        } 
+    }
+}
+
+json_printer *protocol_get_print_sock(UdpSocket *sock)
 {
     json_printer *print = malloc(sizeof(json_printer));
 
@@ -18,7 +40,7 @@ json_printer *protocol_get_print(UdpSocket *sock)
     }
 
 
-    if (json_print_init(print, printer_cb, sock)) {
+    if (json_print_init(print, printer_sock_cb, sock)) {
         protocol_debug_error("Initialize json print error");
         return NULL;
     }
@@ -26,9 +48,64 @@ json_printer *protocol_get_print(UdpSocket *sock)
     return print;
 }
 
-int protocol_send_auth(UdpSocket *sock, const char *usr, const char *pwd) 
+json_printer *protocol_get_print(EncryptContext *context)
 {
-    json_printer *print = protocol_get_print(sock);
+    json_printer *print = malloc(sizeof(json_printer));
+
+    if (json_print_init(print, printer_cb, context)) {
+        protocol_debug_error("Initialize json print error");
+        return NULL;
+    }
+
+    return print;
+}
+
+int protocol_send(UdpSocket *sock, PrplHeader *header, const char *encrypt_data, int len)
+{
+    json_printer *print = protocol_get_print_sock(sock);
+
+    if (print == NULL) {
+        protocol_debug_error("Initialize printer error");
+        return -1;
+    }
+
+    json_print_args(print, json_print_pretty,
+            JSON_OBJECT_BEGIN,
+            JSON_KEY, "from", 4, JSON_STRING, header->from, strlen(header->from),
+            JSON_KEY, "to",   2, JSON_STRING, header->to, strlen(header->to),
+            JSON_KEY, "ver",  3, JSON_STRING, header->ver, strlen(header->ver),
+            JSON_KEY, "data", 4, JSON_STRING, encrypt_data, len),
+        JSON_OBJECT_END,
+        -1);
+
+    json_print_free(print);
+    free(print);
+
+    protocol_debug_info("Sended auth");
+
+    return 0;
+}
+
+int protocol_send_auth(UdpSocket *sock, PrplHeader *header, const char *usr, const char *pwd) 
+{
+    EncryptContext context;
+    json_printer *printer = protocol_get_print(&context);
+    if (print == NULL) {
+        protocol_debug_error("Initialize printer error");
+        return -1;
+    }
+    protocol_send_auth_helper(&context, user, pwd);
+    encrypt_encrypt(&context, header->key);
+    protocol_send(sock, header, context.context, context.pos); 
+
+    encrypt_free(&context);
+    json_print_free(print);
+    free(printer);
+}
+
+int protocol_send_auth_helper(encryptcontext *context, const char *usr, const char *pwd) 
+{
+    json_printer *print = protocol_get_print(&context);
 
     if (print == NULL) {
         protocol_debug_error("Initialize printer error");
@@ -41,15 +118,15 @@ int protocol_send_auth(UdpSocket *sock, const char *usr, const char *pwd)
 
     json_print_args(print, json_print_pretty,
             JSON_OBJECT_BEGIN,
-                JSON_KEY, "type", 4, JSON_STRING, "login", 5,
-                JSON_KEY, "user", 4, JSON_STRING, usr, strlen(usr),
-                JSON_KEY, "pwd",  3, JSON_STRING, pwd, strlen(pwd),
+            JSON_KEY, "type", 4, JSON_STRING, "login", 5,
+            JSON_KEY, "user", 4, JSON_STRING, usr, strlen(usr),
+            JSON_KEY, "pwd",  3, JSON_STRING, pwd, strlen(pwd),
             JSON_OBJECT_END,
             -1);
-    
+
     json_print_free(print);
     free(print);
-    
+
     protocol_debug_info("Sended auth");
 
     return 0;
@@ -67,14 +144,14 @@ int protocol_send_contact_req(UdpSocket *sock)
 
     json_print_args(print, json_print_pretty,
             JSON_OBJECT_BEGIN,
-                JSON_KEY, "type", 4, JSON_STRING, "req", 3,
-                JSON_KEY, "req",  3, JSON_STRING, "contact", 7,
+            JSON_KEY, "type", 4, JSON_STRING, "req", 3,
+            JSON_KEY, "req",  3, JSON_STRING, "contact", 7,
             JSON_OBJECT_END,
             -1);
-    
+
     json_print_free(print);
     free(print);
-    
+
     protocol_debug_info("Sended msg");
     return 0;
 }
@@ -92,51 +169,60 @@ int protocol_send_msg(UdpSocket *sock, const char *to, const char *msg)
 
     json_print_args(print, json_print_pretty,
             JSON_OBJECT_BEGIN,
-                JSON_KEY, "type", 4, JSON_STRING, "msg", 3,
-                JSON_KEY, "to",   2, JSON_STRING, to, strlen(to),
-                JSON_KEY, "msg",  3, JSON_STRING, msg, strlen(msg),
+            JSON_KEY, "type", 4, JSON_STRING, "msg", 3,
+            JSON_KEY, "to",   2, JSON_STRING, to, strlen(to),
+            JSON_KEY, "msg",  3, JSON_STRING, msg, strlen(msg),
             JSON_OBJECT_END,
             -1);
-    
+
     json_print_free(print);
     free(print);
-    
+
     protocol_debug_info("Sended msg");
     return 0;
 }
 
-int printer_cb (void *userdata, const char *s, uint32_t length) 
-{
-    UdpSocket *sock =  (UdpSocket*)userdata;
+int protocol_send_val(UdpSocket *sock, 
 
-    udp_send(sock, s, length);
+        int printer_sock_cb (void *userdata, const char *s, uint32_t length) 
+        {
+        UdpSocket *sock =  (UdpSocket*)userdata;
 
-    return 0;
-}
+        udp_send(sock, s, length);
 
-int protocol_parser_init(protocol_parser_t *parser) 
-{
-    json_parser *jparser;
-    json_parser_dom *dom;
-    jparser = malloc(sizeof(json_parser));
-    dom = malloc(sizeof(json_parser_dom));
-    parser->parser = jparser;
-    parser->parser_dom = dom;
-    
+        return 0;
+        }
 
-    if (json_parser_dom_init(dom, tree_create_structure, tree_create_data, tree_append)) {
-        protocol_debug_error("Initialize json dom error");
-        return -1;
-    }
+        int printer_cb (void *userdata, const char *s, uint32_t length) 
+        {
+        EncryptContext *context =  (EncryptContext*)userdata;
+        encrypt_update(context, s, length);
+        return 0;
+        }
 
-    if (json_parser_init(jparser, NULL, json_parser_dom_callback, dom)) {
-        protocol_debug_error("Initialize json parser error");
-        return-1;
-    }
+        int protocol_parser_init(protocol_parser_t *parser) 
+        {
+        json_parser *jparser;
+        json_parser_dom *dom;
+        jparser = malloc(sizeof(json_parser));
+        dom = malloc(sizeof(json_parser_dom));
+        parser->parser = jparser;
+        parser->parser_dom = dom;
 
-    protocol_debug_info("Initialized json");
-    return 0;
-}
+
+        if (json_parser_dom_init(dom, tree_create_structure, tree_create_data, tree_append)) {
+            protocol_debug_error("Initialize json dom error");
+            return -1;
+        }
+
+        if (json_parser_init(jparser, NULL, json_parser_dom_callback, dom)) {
+            protocol_debug_error("Initialize json parser error");
+            return-1;
+        }
+
+        protocol_debug_info("Initialized json");
+        return 0;
+        }
 
 int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32_t length) 
 {
@@ -154,12 +240,10 @@ int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32
     return 0;
 }
 
-int protocol_get_int_val (json_val_t *val, ...) 
+int protocol_get_int(json_val_t *val, const char *key) 
 {
-    va_list ap;
-    va_start(ap, val);
-    val = protocol_get_val_by_list (val, ap);
-    va_end(ap);
+    json_val_t *val = protocol_get_val(val, key); 
+
     if (val == NULL) {
         protocol_debug_error("Invalid key");
         return 0;
@@ -168,80 +252,48 @@ int protocol_get_int_val (json_val_t *val, ...)
         protocol_debug_error("Json value type isn't int");
     }
 
-    
     return atoi(val->u.data);
 }
 
-json_val_t **protocol_get_array_val (json_val_t *val, ...) 
+char *protocol_get_string(json_val_t *val, const char* key) 
 {
-    va_list ap;
-    va_start(ap, val);
-    val = protocol_get_val_by_list(val, ap);
-    va_end(ap);
-    if (val == NULL) {
-        protocol_debug_error("Invalid key");
-        return NULL;
-    }
-    if (val->type != JSON_ARRAY_BEGIN) {
-        protocol_debug_error("Json value type isn't array");
-    }
-    return val->u.array;
-}
+    json_val_t *val = protocol_get_val(val, key); 
 
-char *protocol_get_string_val (json_val_t *val, ...) 
-{
-    va_list ap;
-    va_start(ap, val);
-    val = protocol_get_val_by_list(val, ap);
-    va_end(ap);
     if (val == NULL) {
         protocol_debug_error("Invalid key");
         return NULL;
     }
+
     if (val->type != JSON_STRING) {
         protocol_debug_error("Json value type isn't string");
     }
     return val->u.data;
 }
 
-json_val_t *protocol_get_val (json_val_t *val, ...) 
+json_val_t *protocol_get_val(json_val_t *val, const char* key) 
 {
-    va_list ap;
-    va_start(ap, val);
-    val = protocol_get_val_by_list(val, ap);
-    va_end(ap);
-    if (val == NULL) {
-        protocol_debug_error("Invalid key");
+    uint32_t key_length;
+    struct json_val_elem *val_elem;
+
+    if (val->type != JSON_OBJECT_BEGIN) {
+        protocol_debug_error("Json value isn't object");
         return NULL;
     }
-    return val;
-}
 
-json_val_t *protocol_get_val_by_list (json_val_t *val, va_list ap) 
-{
-    char* a;
-    uint32_t key_length;
-    uint32_t i;
-    struct json_val_elem *val_elem;
-    while (a = va_arg(ap, char*), a != NULL) {
-        if (val->type != JSON_OBJECT_BEGIN) {
-            protocol_debug_error("Json value isn't object");
-            return NULL;
+    key_length = val->length;
+    for (i = 0;i < key_length;i++) {
+        val_elem = val->u.object[i];
+        if (strcmp(val_elem->key, key) == 0) {
+            protocol_debug_info("Found key: %s", val_elem->key);
+            val = val_elem->val;
+            break;
         }
-        key_length = val->length;
-        for (i = 0;i < key_length;i++) {
-            val_elem = val->u.object[i];
-            if (strcmp(val_elem->key, a) == 0) {
-                protocol_debug_info("Found key: %s", val_elem->key);
-                val = val_elem->val;
-                break;
-            }
-        } 
-        if (i == key_length) {
-            protocol_debug_error("Can't find key");
-            return NULL;
-        }
+    } 
+    if (i == key_length) {
+        protocol_debug_error("Can't find key");
+        return NULL;
     }
+
     return val;
 }
 
@@ -260,6 +312,7 @@ void protocol_parser_free (protocol_parser_t *parser)
     protocol_debug_info("Free protocol parser");
 }
 
+//dom callback
 static void *tree_create_structure(int nesting, int is_object)
 {
     json_val_t *v = malloc(sizeof(json_val_t));

@@ -11,17 +11,17 @@
 #include<arpa/inet.h>
 #include<unistd.h>
 
-#define UDP_TAG "udp"
+#define udp_tag "udp"
 
-#define udp_debug_info(format, ...) fprintf(stdout, "%s:", UDP_TAG);\
+#define udp_debug_info(format, ...) fprintf(stdout, "%s:", udp_tag);\
                                     fprintf(stdout, format,## __VA_ARGS__);\
                                     fprintf(stdout, "\n")
 
-#define udp_debug_error(format, ...) fprintf(stderr, "%s:", UDP_TAG);\
+#define udp_debug_error(format, ...) fprintf(stderr, "%s:", udp_tag);\
                                      fprintf(stderr, "%s: %s(errno: %d)\n", format, strerror(errno), errno, ## __VA_ARGS__)
 
 #ifdef  DEBUG
-#define udp_debug_trace(format, ...)  fprintf(stdout, "%s:", UDP_TAG);\
+#define udp_debug_trace(format, ...)  fprintf(stdout, "%s:", udp_tag);\
                                       fprintf(stdout, format,## __VA_ARGS__);\
                                       fprintf(stdout, "\n")
 #else
