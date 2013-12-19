@@ -87,3 +87,4 @@ uninstall-pkgLTLIBRARIES:
 	  echo " $(LIBTOOL)  $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkgdir)/$$f'"; \
 	  $(LIBTOOL)  $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkgdir)/$$f"; \
 	done
+

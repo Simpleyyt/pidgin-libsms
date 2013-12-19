@@ -1,17 +1,14 @@
-#ifndef _PROTOCOL_H_
-#define _PROTOCOL_H_
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 
 #include <stdio.h>
 #include "udp.h"
 #include "json.h"
+#include "context.h"
+#include "crypt/aes.h"
+#include "crypt/sha1.h"
 
 #define PROTOCOL_TAG "protocol"
-
-#define VAL_EX(V, N)        JSON_KEY, #V, N
-#define VAL(V)              VAL_EX(V, strlen(#V)) 
-#define KEY_EX(K, N)        JSON_STRING, #K, N
-#define KEY(K)              KEY_EX(K,strlen(#K)
-#define VAL_KEY(V, K)       VAL(V), KEY(K)
 
 #define protocol_debug_info(format, ...) fprintf(stdout, "%s:", PROTOCOL_TAG);\
                                          fprintf(stdout, format,## __VA_ARGS__);\
@@ -32,12 +29,13 @@ struct json_val_elem {
     struct json_val *val;
 };
 
-typedef struct _PrplHeader {
+typedef struct _PtlHeader {
     char *from;
     char *to;
     char *ver;
     char *key;
-} PrplHeader;
+    char *dist;
+} PtlHeader;
 
 typedef struct json_val {
     int type;
@@ -54,28 +52,35 @@ typedef struct protocol_parser {
     json_parser_dom *parser_dom;
 } protocol_parser_t;
 
+//Json value helper
+json_val_t *json_val_create(int is_object);
+int json_val_append_string(json_val_t *val_t, char *key, const char *val);
+int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val);
+int json_val_pretty(json_printer *printer, json_val_t *val);
+int json_val_free(json_val_t *val);
 
-json_printer *protocol_get_print(UdpSocket *sock);
+//Protocol pretty helper
+int protocol_init(PtlHeader *header);
+int protocol_set_key(PtlHeader *header, char *user, char *pwd);
+int protocol_pretty_val(Context *ctx, json_val_t *val);
+int protocol_encrypt_val(Context *ctx, PtlHeader *header, json_val_t *val);
+int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val);
+int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd);
 
-int protocol_send_contact_req(UdpSocket *sock);
-
-int protocol_send_auth(UdpSocket *sock, const char *usr, const char *pwd);
-
-int protocol_send_msg(UdpSocket *sock, const char *to, const char *msg);
-
+//Protocol parser
 int protocol_parser_init(protocol_parser_t *parser);
-
-
 int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32_t length);
-
+int protocol_decrypt_string(Context *ctx, PtlHeader *header);
+int protocol_parser_is_done (protocol_parser_t *parser);
+char *protocol_get_string(json_val_t *val, const char* key);
+json_val_t *protocol_get_val(json_val_t *val, const char* key);
 void protocol_parser_free (protocol_parser_t *parser);
 
-int protocol_parser_is_done (protocol_parser_t *parser);
-
-char *protocol_get_string_val (json_val_t *val, ...);
-
-json_val_t **protocol_get_array_val (json_val_t *val, ...);
-
-json_val_t *protocol_get_val (json_val_t *val, ...);
+//Json function callback
+static void *tree_create_structure(int nesting, int is_object);
+static char *memalloc_copy_length(const char *src, uint32_t n);
+static void *tree_create_data(int type, const char *data, uint32_t length);
+static int tree_append(void *structure, char *key, uint32_t key_length, void *obj);
+static int printer_cb (void *userdata, const char *s, uint32_t length);
 
 #endif
