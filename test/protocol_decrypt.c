@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include "protocol.h"
-#include "context.h"
+#include "buffer.h"
 
 int main()
 {
     FILE *fd;
     char buffer[4096];
-    Context ctx;
+    Buffer ctx;
     json_val_t *val;
     PtlHeader header;
     char dist[20];
@@ -15,7 +15,7 @@ int main()
     protocol_init(&header);
     protocol_set_key(&header, "user", "pwd");
 
-    context_init(&ctx);
+    buffer_init(&ctx);
     if ((fd = fopen("test.dec", "r")) == NULL) {
         printf("Can't open file\n");
         return 1;
@@ -24,7 +24,7 @@ int main()
         int read = fread(buffer, 1, 4096, fd);
         if (read <= 0)
             break;
-        context_update(&ctx, buffer, read);
+        buffer_update(&ctx, buffer, read);
     } 
 
     val = protocol_decrypt_string(&ctx, &header, dist);

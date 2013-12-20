@@ -6,7 +6,7 @@
 #define AUTH_SEND_PORT   8888
 #define AUTH_LISTEN_PORT 8888
 
-#define BUFFER_SIZE      96
+#define BUFFER_SIZE      1024
 #define PRPL_TAG         "smsprpl"
 
 #define smsprpl_debug_info(tag, format, ...) fprintf(stdout, "%s:", tag);\

@@ -84,9 +84,9 @@ int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val)
     assert (sock == NULL || header == NULL || val == NULL);
 
     buffer_init(&ctx);
-    //protocol_encrypt_val(&ctx, header, val);
-    //udp_send(sock, header->dist, 20);
-    //udp_send(sock, ctx.buffer, ctx.pos);
+    protocol_encrypt_val(&ctx, header, val);
+    udp_send(sock, header->dist, 20);
+    udp_send(sock, ctx.buffer, ctx.pos);
     buffer_free(&ctx);
 
     leave_func();
@@ -116,8 +116,6 @@ int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, con
     json_val_append_val(root, "data", val);
     protocol_send_val(sock, header, root);
     json_val_free(root);
-    json_val_free(val);
-    free(val);
     free(root);
 
     leave_func();
@@ -176,6 +174,7 @@ int protocol_encrypt_string(Buffer *ctx, PtlHeader *header)
     buffer_padding(ctx, ' ');
     assert(header->key == NULL);
     strncpy((char *)iv, header->key, 16);
+    protocol_debug_trace("Before encrypt:\n%s\nlength:%d\n", ctx->buffer, ctx->pos);
     aes_setkey_enc(&aes, (unsigned char*)header->key, 128);
     aes_crypt_cbc(&aes, AES_ENCRYPT, ctx->pos,
             iv, (unsigned char*)ctx->buffer, (unsigned char*)ctx->buffer);
@@ -209,7 +208,7 @@ json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header, char dist[20
     strncpy((char*)iv, header->key, 16);
     strncpy(dist, ctx->buffer, 20);
 
-    buffer_padding(&dec_ctx, ' ');
+    //buffer_padding(&dec_ctx, ' ');
     
     aes_setkey_dec(&aes, (unsigned char*)header->key, 128);
     aes_crypt_cbc(&aes, AES_DECRYPT, dec_ctx.pos, 

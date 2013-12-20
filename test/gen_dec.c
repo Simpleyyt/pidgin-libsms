@@ -6,7 +6,7 @@ int main()
     FILE *fd;
     FILE *fd_to;
     char buffer[4096];
-    Context ctx;
+    Buffer ctx;
     json_val_t *val;
     PtlHeader header;
     char dist[20];
@@ -15,7 +15,7 @@ int main()
     protocol_init(&header);
     protocol_set_key(&header, "user", "pwd");
 
-    context_init(&ctx);
+    buffer_init(&ctx);
     if ((fd = fopen("test.json", "r")) == NULL) {
         printf("Can't open file\n");
         return 1;
@@ -25,7 +25,7 @@ int main()
         int read = fread(buffer, 1, 4096, fd);
         if (read <= 0)
             break;
-        context_update(&ctx, buffer, read);
+        buffer_update(&ctx, buffer, read);
     } 
 
     if ((fd_to = fopen("test.dec", "w")) == NULL) {

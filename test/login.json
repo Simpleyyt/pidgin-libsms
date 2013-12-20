@@ -1,4 +1,9 @@
 {
-    "type"   : "auth",
-    "result" : "success"
+    "from" : "1",
+    "to"   : "2",
+    "ver"  : "1.0",
+    "data" : {
+        "type"   : "auth",
+        "result" : "success"
+    }
 }

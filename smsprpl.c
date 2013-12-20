@@ -78,6 +78,14 @@
 #define SMS_STATUS_AWAY     "away"
 #define SMS_STATUS_OFFLINE  "offline"
 
+#define RE_IF(A, R);    if (A) {\
+                        smsprpl_debug_error(PRPL_TAG, "in %s (%s)  break\n", __FUNCTION__, #A);\
+                        return R; }
+#define RE_V_IF(A);    if (A) {\
+                        smsprpl_debug_error(PRPL_TAG, "in %s (%s) break\n", __FUNCTION__, #A);\
+                        return; }
+#define RE_N_IF(A);     RE_IF(A, NULL);
+#define RE_1_IF(A);     RE_IF(A, 1);
 
 static char *smsprpl_status_text(PurpleBuddy *buddy) {
     smsprpl_debug_info("smsprpl", "getting %s's status text for %s\n",
@@ -149,10 +157,8 @@ static void process_contact (PurpleConnection *gc, json_val_t *val)
     char *phone = protocol_get_string(val, "phone");
     char *name = protocol_get_string(val, "name");
     char *group = protocol_get_string(val, "group");
-    if (phone == NULL || name == NULL|| group == NULL) {
-        smsprpl_debug_error(PRPL_TAG, "contact data error\n");
-        return;
-    }
+
+    RE_V_IF(phone == NULL || name == NULL || group == NULL || gc == NULL || val == NULL);
     
     smsprpl_debug_info("smsprpl", "recieve contact: name:%s; phone:%s; group:%s\n", name, phone, group);
     g = purple_find_group(group);
@@ -170,6 +176,8 @@ static void process_contact (PurpleConnection *gc, json_val_t *val)
 static void process_auth (PurpleConnection *gc, json_val_t *val)
 {
     char *result = protocol_get_string(val, "result");
+    
+    RE_V_IF(gc == NULL || val == NULL || result == NULL);
     smsprpl_debug_info("smsprpl", "the auth result is %s\n", result);
     if (strcmp(result, "success") == 0) {
         smsprpl_debug_info ("smsprpl", "auth succeed\n");
@@ -185,10 +193,8 @@ static void process_msg(PurpleConnection *gc, json_val_t *val)
 {
     char *who = protocol_get_string(val, "who");
     char *msg = protocol_get_string(val, "msg");
-    if (who == NULL || msg == NULL) {
-        smsprpl_debug_error(PRPL_TAG, "string 'who' or 'msg' is null\n");
-        return;
-    }
+
+    RE_V_IF(who == NULL || msg == NULL || gc == NULL || val == NULL);
     smsprpl_debug_info(PRPL_TAG, "message come from %s: %s\n", who, msg);
     serv_got_im(gc, who, msg, 0, time(NULL));
 }
@@ -201,9 +207,10 @@ static void process_resp (PurpleConnection *gc, json_val_t *val)
 static void process (PurpleConnection *gc, json_val_t *root)
 {
     char *type;
-    if (root == NULL)
-        return;
+
+    RE_V_IF(gc == NULL || root == NULL);
     type = protocol_get_string(root, "type");
+    RE_V_IF(type == NULL);
     smsprpl_debug_info("smsprpl", "the package type is %s\n", type);
     if (strcmp(type, "resp") == 0)
         process_resp(gc, root);
@@ -227,12 +234,8 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
     json_val_t *val;
     char dist[20];
     
-
+    RE_V_IF(source <= 0 || gc == NULL);
     buffer_init(&ctx);
-
-    if (source <= 0)
-        return;
-
     smsprpl_debug_info("smsprpl", "received data\n");
     
     while (1) {
@@ -241,13 +244,12 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
             break;
         buffer_update(&ctx, buffer, read_num);
     }
-
     val = protocol_decrypt_string(&ctx, ptl_data->header, dist);
+    RE_V_IF(val == NULL);
 
     val = protocol_get_val(val, "data");
     
     process(gc, val);
-
     buffer_free(&ctx);
 }
 
@@ -258,6 +260,7 @@ static void udp_listen_cb(int sockfd, gpointer data)
     ptl_data->udp_listenfd = sockfd;
     ptl_data->udp_listen_data = NULL;
 
+    RE_V_IF(sockfd <= 0 || gc == NULL || ptl_data == NULL);
     smsprpl_debug_info("smsprpl", "listen setup\n");
     ptl_data->udp_input_read = purple_input_add(sockfd, PURPLE_INPUT_READ, input_cb, gc);
     if (ptl_data->udp_input_read == -1) {
