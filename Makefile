@@ -2,7 +2,7 @@ SHELL = /bin/bash
 libdir = /usr/lib
 PURPLE_MAJOR_VERSION = 2
 libpurple_dir = ./libpurple/
-libsms_la_OBJECTS = smsprpl.lo udp.lo protocol.lo json.lo
+libsms_la_OBJECTS = smsprpl.lo udp.lo protocol.lo json.lo buffer.lo aes.lo sha1.lo padlock.lo
 LTLIBRARIES = libsms.la
 pkg_LTLIBRARIES = libsms.la
 MKDIR_P = /bin/mkdir -p
@@ -13,7 +13,7 @@ CC = gcc
 CCLD = $(CC)
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
-INCLUDES = -I. -I$(libpurple_dir)
+INCLUDES = -I. -I$(libpurple_dir) -I./crypt/
 V_CC = @echo "  CC    " $@;
 V_CCLD = @echo "  CCLD  " $@;
 V_at = @
@@ -42,6 +42,10 @@ libsms.la: $(libsms_la_OBJECTS)
 			$(V_CCLD)$(libsms_la_LINK) -rpath $(pkgdir) $(libsms_la_OBJECTS) $(libsms_la_LIBADD) $(LIBS)
 
 %.lo: %.c
+	$(V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+	$(V_at)$(mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+
+%.lo: crypt/%.c
 	$(V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 	$(V_at)$(mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 

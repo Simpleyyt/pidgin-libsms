@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "udp.h"
 #include "json.h"
-#include "context.h"
+#include "buffer.h"
 #include "crypt/aes.h"
 #include "crypt/sha1.h"
 
@@ -62,25 +62,19 @@ int json_val_free(json_val_t *val);
 //Protocol pretty helper
 int protocol_init(PtlHeader *header);
 int protocol_set_key(PtlHeader *header, char *user, char *pwd);
-int protocol_pretty_val(Context *ctx, json_val_t *val);
-int protocol_encrypt_val(Context *ctx, PtlHeader *header, json_val_t *val);
+int protocol_pretty_val(Buffer *ctx, json_val_t *val);
+int protocol_encrypt_val(Buffer *ctx, PtlHeader *header, json_val_t *val);
+int protocol_encrypt_string(Buffer *ctx, PtlHeader *header);
 int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val);
 int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd);
 
 //Protocol parser
 int protocol_parser_init(protocol_parser_t *parser);
 int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32_t length);
-json_val_t *protocol_decrypt_string(Context *ctx, PtlHeader *header, char dist[20]);
+json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header, char dist[20]);
 int protocol_parser_is_done (protocol_parser_t *parser);
 char *protocol_get_string(json_val_t *val, const char* key);
 json_val_t *protocol_get_val(json_val_t *val, const char* key);
 void protocol_parser_free (protocol_parser_t *parser);
-
-//Json function callback
-static void *tree_create_structure(int nesting, int is_object);
-static char *memalloc_copy_length(const char *src, uint32_t n);
-static void *tree_create_data(int type, const char *data, uint32_t length);
-static int tree_append(void *structure, char *key, uint32_t key_length, void *obj);
-static int printer_cb (void *userdata, const char *s, uint32_t length);
 
 #endif

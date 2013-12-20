@@ -1,6 +1,21 @@
 #include "protocol.h"
 #include "stdarg.h"
 
+#define assert(A); if (A) {\
+                    protocol_debug_error("assert: %s", #A);\
+                    return -1;\
+                  }
+
+#define enter_func(); protocol_debug_trace("enter func: %s", __FUNCTION__);
+#define leave_func(); protocol_debug_trace("leave func: %s", __FUNCTION__);
+
+
+static void *tree_create_structure(int nesting, int is_object);
+static char *memalloc_copy_length(const char *src, uint32_t n);
+static void *tree_create_data(int type, const char *data, uint32_t length);
+static int tree_append(void *structure, char *key, uint32_t key_length, void *obj);
+static int printer_cb (void *userdata, const char *s, uint32_t length);
+
 int json_val_append_string(json_val_t *val_t, char *key, const char *val)
 {
     json_val_t *elem_val = tree_create_data(JSON_STRING, val, strlen(val));
@@ -64,19 +79,17 @@ int json_val_pretty(json_printer *printer, json_val_t *val)
 
 int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val)
 {
-    Context ctx;
-    Context ctx_a;
-    char dist[20];
+    Buffer ctx;
+    enter_func();
+    assert (sock == NULL || header == NULL || val == NULL);
 
-    context_init(&ctx_a);
-    context_init(&ctx);
-    protocol_encrypt_val(&ctx, header, val);
-    context_update(&ctx_a, header->dist, 20);
-    context_update(&ctx_a, ctx.buffer, ctx.pos);
-    udp_send(sock, ctx_a.buffer, ctx_a.pos);
-    context_free(&ctx);
-    context_free(&ctx_a);
+    buffer_init(&ctx);
+    //protocol_encrypt_val(&ctx, header, val);
+    //udp_send(sock, header->dist, 20);
+    //udp_send(sock, ctx.buffer, ctx.pos);
+    buffer_free(&ctx);
 
+    leave_func();
     return 0;
 }
 
@@ -89,6 +102,10 @@ int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, con
 {
     json_val_t *root = json_val_create(1);
     json_val_t *val = json_val_create(1);
+    
+    enter_func();
+    assert(sock == NULL || header == NULL || user == NULL || pwd == NULL);
+    assert(header->from == NULL || header->to == NULL || header->ver == NULL);
 
     json_val_append_string(val, "type", "login");
     json_val_append_string(val, "user", user);
@@ -103,6 +120,7 @@ int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, con
     free(val);
     free(root);
 
+    leave_func();
     return 0;
 }
 
@@ -119,75 +137,101 @@ int protocol_init(PtlHeader *header)
 int protocol_set_key(PtlHeader *header, char *user, char *pwd)
 {
     sha1_context sha1_ctx;
-    sha1(user, strlen(user), header->dist);
+    sha1((unsigned char*)user, strlen(user), (unsigned char*)header->dist);
     protocol_debug_info("Setted dist");
     sha1_starts(&sha1_ctx);
-    sha1_update(&sha1_ctx, user, strlen(user));
-    sha1_update(&sha1_ctx, pwd, strlen(pwd));
-    sha1_finish(&sha1_ctx, header->key);
+    sha1_update(&sha1_ctx, (unsigned char*)user, strlen(user));
+    sha1_update(&sha1_ctx, (unsigned char*)pwd, strlen(pwd));
+    sha1_finish(&sha1_ctx, (unsigned char*)header->key);
     protocol_debug_info("Setted key");
 
     return 0;
 }
 
-int protocol_pretty_val(Context *ctx, json_val_t *val)
+int protocol_pretty_val(Buffer *ctx, json_val_t *val)
 {
     json_printer printer;
+    int ret;
+    enter_func();
+    assert(ctx == NULL || val == NULL);
 
     if (json_print_init(&printer, printer_cb, ctx)) {
         protocol_debug_error("Initialize json print error");
         return -1;
     }
 
-    return json_val_pretty(&printer, val);
+    ret = json_val_pretty(&printer, val);
+    json_print_free(&printer);
+    leave_func();
+    return ret;
 }
 
-int protocol_encrypt_val(Context *ctx, PtlHeader *header, json_val_t *val)
+int protocol_encrypt_string(Buffer *ctx, PtlHeader *header)
 {
     aes_context aes;
     unsigned char iv[16];
-    int iv_off = 0;
+    enter_func();
+    assert(ctx == NULL || header == NULL);
 
-    strncpy(iv, header->key, 16);
-    protocol_pretty_val(ctx, val);
-    protocol_debug_trace("Sent data:\n%s\nlength:%d\n", ctx->buffer, ctx->pos);
-    aes_setkey_enc(&aes, header->key, 128);
-    aes_crypt_cfb(&aes, AES_ENCRYPT, 16, &iv_off,
-            iv, ctx->buffer, ctx->buffer);
+    buffer_padding(ctx, ' ');
+    assert(header->key == NULL);
+    strncpy((char *)iv, header->key, 16);
+    aes_setkey_enc(&aes, (unsigned char*)header->key, 128);
+    aes_crypt_cbc(&aes, AES_ENCRYPT, ctx->pos,
+            iv, (unsigned char*)ctx->buffer, (unsigned char*)ctx->buffer);
 
+    leave_func();
     return 0;
 }
 
-json_val_t *protocol_decrypt_string(Context *ctx, PtlHeader *header, char dist[20])
+int protocol_encrypt_val(Buffer *ctx, PtlHeader *header, json_val_t *val)
 {
+    enter_func();
+    assert (ctx == NULL || header == NULL || val == NULL);
+    protocol_pretty_val(ctx, val);
+    protocol_encrypt_string(ctx, header);
+
+    leave_func();
+    return 0;
+}
+
+json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header, char dist[20])
+{
+    Buffer dec_ctx;
     protocol_parser_t parser;
     json_val_t *val;
     aes_context aes;
     unsigned char iv[16];
-    int iv_off = 0;
 
-    strncpy(iv, header->key, 16);
+    buffer_init(&dec_ctx);
+    buffer_split(ctx, &dec_ctx, 20); 
+
+    strncpy((char*)iv, header->key, 16);
     strncpy(dist, ctx->buffer, 20);
-    aes_setkey_dec(&aes, header->key, 128);
-    aes_crypt_cfb(&aes, AES_DECRYPT, 16, &iv_off,
-            iv, ctx->buffer + 20, ctx->buffer + 20);
+
+    buffer_padding(&dec_ctx, ' ');
+    
+    aes_setkey_dec(&aes, (unsigned char*)header->key, 128);
+    aes_crypt_cbc(&aes, AES_DECRYPT, dec_ctx.pos, 
+            iv, (unsigned char*)dec_ctx.buffer, (unsigned char*)dec_ctx.buffer);
     protocol_parser_init(&parser);
-    if (protocol_parser_string(&parser, ctx->buffer + 20, ctx->pos - 20) != 0)
+    if (protocol_parser_string(&parser, dec_ctx.buffer, dec_ctx.pos) != 0)
         return NULL;
     if (!protocol_parser_is_done(&parser))
         return NULL;
     
     val = parser.parser_dom->root_structure;
     protocol_parser_free (&parser);
+    buffer_free (&dec_ctx);
 
     return val; 
 }
 
 static int printer_cb (void *userdata, const char *s, uint32_t length) 
 {
-    Context *ctx =  (Context*)userdata;
+    Buffer *ctx =  (Buffer*)userdata;
 
-    context_update(ctx, (char *)s, length);
+    buffer_update(ctx, (char *)s, length);
 
     return 0;
 }

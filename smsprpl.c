@@ -146,9 +146,9 @@ static void process_contact (PurpleConnection *gc, json_val_t *val)
 {
     PurpleBuddy *b = NULL;
     PurpleGroup *g = NULL;
-    char *phone = protocol_get_string_val (val, "phone", NULL);
-    char *name = protocol_get_string_val(val, "name", NULL);
-    char *group = protocol_get_string_val(val, "group", NULL);
+    char *phone = protocol_get_string(val, "phone");
+    char *name = protocol_get_string(val, "name");
+    char *group = protocol_get_string(val, "group");
     if (phone == NULL || name == NULL|| group == NULL) {
         smsprpl_debug_error(PRPL_TAG, "contact data error\n");
         return;
@@ -169,7 +169,7 @@ static void process_contact (PurpleConnection *gc, json_val_t *val)
 
 static void process_auth (PurpleConnection *gc, json_val_t *val)
 {
-    char *result = protocol_get_string_val (val, "result", NULL);
+    char *result = protocol_get_string(val, "result");
     smsprpl_debug_info("smsprpl", "the auth result is %s\n", result);
     if (strcmp(result, "success") == 0) {
         smsprpl_debug_info ("smsprpl", "auth succeed\n");
@@ -183,8 +183,8 @@ static void process_auth (PurpleConnection *gc, json_val_t *val)
 
 static void process_msg(PurpleConnection *gc, json_val_t *val)
 {
-    char *who = protocol_get_string_val (val, "who", NULL);
-    char *msg = protocol_get_string_val (val, "msg", NULL);
+    char *who = protocol_get_string(val, "who");
+    char *msg = protocol_get_string(val, "msg");
     if (who == NULL || msg == NULL) {
         smsprpl_debug_error(PRPL_TAG, "string 'who' or 'msg' is null\n");
         return;
@@ -203,7 +203,7 @@ static void process (PurpleConnection *gc, json_val_t *root)
     char *type;
     if (root == NULL)
         return;
-    type = protocol_get_string_val(root, "type", NULL);
+    type = protocol_get_string(root, "type");
     smsprpl_debug_info("smsprpl", "the package type is %s\n", type);
     if (strcmp(type, "resp") == 0)
         process_resp(gc, root);
@@ -220,59 +220,47 @@ static void process (PurpleConnection *gc, json_val_t *root)
 static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
 {
     PurpleConnection *gc = data;
-
+    PtlData *ptl_data = gc->proto_data;
     int read_num = 0;
-    int ret = 0;
     char buffer[BUFFER_SIZE]; 
-    protocol_parser_t *parser = malloc(sizeof(protocol_parser_t));
+    Buffer ctx;
     json_val_t *val;
+    char dist[20];
     
+
+    buffer_init(&ctx);
 
     if (source <= 0)
         return;
-    ret = protocol_parser_init(parser);
 
     smsprpl_debug_info("smsprpl", "received data\n");
-
-    if (ret) {
-        smsprpl_debug_error("smsprpl", "initialize parser error\n");
-        purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Unable to connect"));
-        return;
-    }
     
     while (1) {
         read_num = read(source, buffer, BUFFER_SIZE);
         if (read_num <= 0)
             break;
-        ret = protocol_parser_string(parser, buffer, read_num);
+        buffer_update(&ctx, buffer, read_num);
     }
 
+    val = protocol_decrypt_string(&ctx, ptl_data->header, dist);
 
-    
-    ret = protocol_parser_is_done(parser);
-    
-    if (!ret) {
-        smsprpl_debug_error("smsprpl", "parser isn't done\n");
-        return;
-    }
-    val = parser->parser_dom->root_structure;
+    val = protocol_get_val(val, "data");
     
     process(gc, val);
-    
-    protocol_parser_free(parser);
-    free(parser);
+
+    buffer_free(&ctx);
 }
 
 static void udp_listen_cb(int sockfd, gpointer data)
 {
     PurpleConnection *gc = data;
-    SocketData *sock_data = (SocketData*)gc->proto_data;
-    sock_data->udp_listenfd = sockfd;
-    sock_data->udp_listen_data = NULL;
+    PtlData *ptl_data = (PtlData*)gc->proto_data;
+    ptl_data->udp_listenfd = sockfd;
+    ptl_data->udp_listen_data = NULL;
 
     smsprpl_debug_info("smsprpl", "listen setup\n");
-    sock_data->udp_input_read = purple_input_add(sockfd, PURPLE_INPUT_READ, input_cb, gc);
-    if (sock_data->udp_input_read == -1) {
+    ptl_data->udp_input_read = purple_input_add(sockfd, PURPLE_INPUT_READ, input_cb, gc);
+    if (ptl_data->udp_input_read == -1) {
         smsprpl_debug_error("smsprpl", "add input error\n");
         purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Add input error"));
     }
@@ -282,24 +270,31 @@ static void udp_listen_cb(int sockfd, gpointer data)
 static void smsprpl_login(PurpleAccount *acct)
 {
     PurpleConnection *gc = purple_account_get_connection(acct);
-    const char *username = purple_account_get_username(acct);
-    const char *password = purple_account_get_password(acct);
-    SocketData *sock_data = (SocketData*)malloc(sizeof(SocketData));
+    char *username = (char *)purple_account_get_username(acct);
+    char *password = (char *)purple_account_get_password(acct);
+    PtlData *ptl_data = (PtlData*)malloc(sizeof(PtlData));
+    PtlHeader *header = (PtlHeader*)malloc(sizeof(PtlHeader));
 
     smsprpl_debug_info(PRPL_TAG, "enter login\n");
 
-    sock_data->udp_input_read = -1;
-    sock_data->udp_listen_data = NULL;
-    sock_data->udp_listenfd = -1;
-    sock_data->udp_send_sock = NULL;
+    protocol_init(header);
+    protocol_set_key(header, username, password);
+    header->from = "1";
+    header->to = "2";
 
-    gc->proto_data = sock_data;
+    ptl_data->udp_input_read = -1;
+    ptl_data->udp_listen_data = NULL;
+    ptl_data->udp_listenfd = -1;
+    ptl_data->udp_send_sock = NULL;
+    ptl_data->header = header;
 
-    sock_data->udp_send_sock = udp_init_broadcast(8888);
+    gc->proto_data = ptl_data;
+
+    ptl_data->udp_send_sock = udp_init_broadcast(8888);
 
     purple_connection_update_progress(gc, _("Connecting"), 0, 2); 
 
-    if (protocol_send_auth(sock_data->udp_send_sock, username, password) == -1) {
+    if (protocol_send_auth(ptl_data->udp_send_sock, header, username, password) == -1) {
         purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Send auth failed"));
         smsprpl_debug_error(PRPL_TAG, "send auth failed\n");
         return;
@@ -309,9 +304,9 @@ static void smsprpl_login(PurpleAccount *acct)
     
     
     purple_network_listen_map_external(FALSE);
-    sock_data->udp_listen_data = purple_network_listen(8888, SOCK_DGRAM, udp_listen_cb, gc);
+    ptl_data->udp_listen_data = purple_network_listen(8888, SOCK_DGRAM, udp_listen_cb, gc);
 
-    if (sock_data->udp_listen_data == NULL) {
+    if (ptl_data->udp_listen_data == NULL) {
         smsprpl_debug_error(PRPL_TAG, "listen auth failed\n");
         purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Listen auth failed"));
         return;
@@ -320,42 +315,42 @@ static void smsprpl_login(PurpleAccount *acct)
 
 static void smsprpl_close(PurpleConnection *gc)
 {
-    SocketData *sock_data;
+    PtlData *ptl_data;
 
     smsprpl_debug_info(PRPL_TAG, "enter close\n");
     if (gc == NULL)
         return;
     if (gc->proto_data == NULL)
         return;
-    sock_data = (SocketData*)gc->proto_data;
-    if (sock_data->udp_listenfd > 0) {
-        close(sock_data->udp_listenfd);
+    ptl_data = (PtlData*)gc->proto_data;
+    if (ptl_data->udp_listenfd > 0) {
+        close(ptl_data->udp_listenfd);
     }
-    if (sock_data->udp_listen_data != NULL) {
-        purple_network_listen_cancel(sock_data->udp_listen_data);
+    if (ptl_data->udp_listen_data != NULL) {
+        purple_network_listen_cancel(ptl_data->udp_listen_data);
     }
-    if (sock_data->udp_input_read > 0) {
-        purple_input_remove(sock_data->udp_input_read);
+    if (ptl_data->udp_input_read > 0) {
+        purple_input_remove(ptl_data->udp_input_read);
     }
-    if (sock_data->udp_send_sock != NULL) {
-        udp_close(sock_data->udp_send_sock);
+    if (ptl_data->udp_send_sock != NULL) {
+        udp_close(ptl_data->udp_send_sock);
     }
-    free(sock_data);
+    free(ptl_data);
 }
 
 static int smsprpl_send_im(PurpleConnection *gc, const char *who,
         const char *message, PurpleMessageFlags flags)
 {
-    SocketData *sock_data = (SocketData*)gc->proto_data;
+    //PtlData *ptl_data = (PtlData*)gc->proto_data;
 
     smsprpl_debug_info("smsprpl", "sending message to %s: %s\n",
             who, message);
 
-    if (protocol_send_msg(sock_data->udp_send_sock, who, message) != 0) {
-        smsprpl_debug_info("smsprpl", "Send msg error\n");
-        purple_conv_present_error(who, gc->account, _("Send msg error"));
-        return 0;
-    }
+   // if (protocol_send_msg(ptl_data->udp_send_sock, who, message) != 0) {
+   //     smsprpl_debug_info("smsprpl", "Send msg error\n");
+   //     purple_conv_present_error(who, gc->account, _("Send msg error"));
+   //     return 0;
+   // }
 
     return 1;
 }

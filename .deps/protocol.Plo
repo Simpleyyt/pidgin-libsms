@@ -48,7 +48,8 @@ protocol.lo: protocol.c protocol.h /usr/include/stdio.h \
  /usr/include/unistd.h /usr/include/i386-linux-gnu/bits/posix_opt.h \
  /usr/include/i386-linux-gnu/bits/environments.h \
  /usr/include/i386-linux-gnu/bits/confname.h /usr/include/getopt.h \
- /usr/include/i386-linux-gnu/bits/unistd.h json.h
+ /usr/include/i386-linux-gnu/bits/unistd.h json.h buffer.h crypt/aes.h \
+ crypt/sha1.h
 
 protocol.h:
 
@@ -191,3 +192,9 @@ udp.h:
 /usr/include/i386-linux-gnu/bits/unistd.h:
 
 json.h:
+
+buffer.h:
+
+crypt/aes.h:
+
+crypt/sha1.h:
