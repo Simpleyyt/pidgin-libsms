@@ -65,12 +65,17 @@ int json_val_pretty(json_printer *printer, json_val_t *val)
 int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val)
 {
     Context ctx;
+    Context ctx_a;
+    char dist[20];
 
+    context_init(&ctx_a);
     context_init(&ctx);
     protocol_encrypt_val(&ctx, header, val);
-    udp_send(sock, header->dist, 20);
-    udp_send(sock, ctx.buffer, ctx.pos);
+    context_update(&ctx_a, header->dist, 20);
+    context_update(&ctx_a, ctx.buffer, ctx.pos);
+    udp_send(sock, ctx_a.buffer, ctx_a.pos);
     context_free(&ctx);
+    context_free(&ctx_a);
 
     return 0;
 }
@@ -140,14 +145,42 @@ int protocol_pretty_val(Context *ctx, json_val_t *val)
 int protocol_encrypt_val(Context *ctx, PtlHeader *header, json_val_t *val)
 {
     aes_context aes;
+    unsigned char iv[16];
+    int iv_off = 0;
 
+    strncpy(iv, header->key, 16);
     protocol_pretty_val(ctx, val);
-    protocol_debug_trace("Sent data:\n%s\n", ctx->buffer);
+    protocol_debug_trace("Sent data:\n%s\nlength:%d\n", ctx->buffer, ctx->pos);
     aes_setkey_enc(&aes, header->key, 128);
-    aes_crypt_cbc(&aes, AES_ENCRYPT, ctx->pos, header->key, 
-            ctx->buffer, ctx->buffer);
+    aes_crypt_cfb(&aes, AES_ENCRYPT, 16, &iv_off,
+            iv, ctx->buffer, ctx->buffer);
 
     return 0;
+}
+
+json_val_t *protocol_decrypt_string(Context *ctx, PtlHeader *header, char dist[20])
+{
+    protocol_parser_t parser;
+    json_val_t *val;
+    aes_context aes;
+    unsigned char iv[16];
+    int iv_off = 0;
+
+    strncpy(iv, header->key, 16);
+    strncpy(dist, ctx->buffer, 20);
+    aes_setkey_dec(&aes, header->key, 128);
+    aes_crypt_cfb(&aes, AES_DECRYPT, 16, &iv_off,
+            iv, ctx->buffer + 20, ctx->buffer + 20);
+    protocol_parser_init(&parser);
+    if (protocol_parser_string(&parser, ctx->buffer + 20, ctx->pos - 20) != 0)
+        return NULL;
+    if (!protocol_parser_is_done(&parser))
+        return NULL;
+    
+    val = parser.parser_dom->root_structure;
+    protocol_parser_free (&parser);
+
+    return val; 
 }
 
 static int printer_cb (void *userdata, const char *s, uint32_t length) 

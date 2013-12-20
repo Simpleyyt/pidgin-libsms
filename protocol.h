@@ -70,7 +70,7 @@ int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, con
 //Protocol parser
 int protocol_parser_init(protocol_parser_t *parser);
 int protocol_parser_string(protocol_parser_t *parser, const char *string, uint32_t length);
-int protocol_decrypt_string(Context *ctx, PtlHeader *header);
+json_val_t *protocol_decrypt_string(Context *ctx, PtlHeader *header, char dist[20]);
 int protocol_parser_is_done (protocol_parser_t *parser);
 char *protocol_get_string(json_val_t *val, const char* key);
 json_val_t *protocol_get_val(json_val_t *val, const char* key);
