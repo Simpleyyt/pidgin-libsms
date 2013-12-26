@@ -2,14 +2,12 @@
 #include "protocol.h"
 #include "buffer.h"
 
-int main()
-{
+int main() {
     FILE *fd;
     char buffer[4096];
     Buffer ctx;
     json_val_t *val;
     PtlHeader header;
-    char dist[20];
     char *str;
 
     protocol_init(&header);
@@ -27,9 +25,9 @@ int main()
         buffer_update(&ctx, buffer, read);
     } 
 
-    val = protocol_decrypt_string(&ctx, &header, dist);
+    val = protocol_decrypt_string(&ctx, &header);
 
-    if (strncmp(dist, header.dist, 20) == 0) {
+    if (protocol_vertify(&ctx, &header) == 0) {
         printf("vertify succeed\n");
     } else
         printf("vertify failed\n");
@@ -40,7 +38,7 @@ int main()
     }
     str = protocol_get_string(val, "ver");
 
-    printf ("the val of key:\"%s\" is \"%s\"\n", "ver", str);
-    
+    printf("the val of key:\"%s\" is \"%s\"\n", "ver", str);
+
     return 0;
 }

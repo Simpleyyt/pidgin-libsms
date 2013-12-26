@@ -1,5 +1,5 @@
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#ifndef BUFFER_H
+#define BUFFER_H
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,8 +15,9 @@ typedef struct _Buffer {
 
 int buffer_init(Buffer *ctx);
 int buffer_update(Buffer *ctx, char *input, int ilen);
-int buffer_split(Buffer *first, Buffer *second, int size);
 int buffer_padding(Buffer *buffer, char c);
+int buffer_merge_all(Buffer *source, int begin, Buffer *dist);
+int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen);
 int buffer_free(Buffer *ctx);
 
 #endif

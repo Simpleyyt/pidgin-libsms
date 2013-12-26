@@ -232,7 +232,6 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
     char buffer[BUFFER_SIZE]; 
     Buffer ctx;
     json_val_t *val;
-    char dist[20];
     
     RE_V_IF(source <= 0 || gc == NULL);
     buffer_init(&ctx);
@@ -244,7 +243,12 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
             break;
         buffer_update(&ctx, buffer, read_num);
     }
-    val = protocol_decrypt_string(&ctx, ptl_data->header, dist);
+    if (protocol_vertify(&ctx, ptl_data->header) !=0 )
+    {
+        smsprpl_debug_info(PRPL_TAG, "packet is not matched\n");
+        return;
+    }
+    val = protocol_decrypt_string(&ctx, ptl_data->header);
     RE_V_IF(val == NULL);
 
     val = protocol_get_val(val, "data");
@@ -368,7 +372,7 @@ static void smsprpl_set_status(PurpleAccount *acct, PurpleStatus *status) {
 
 static const char *smsprpl_list_icon(PurpleAccount *acct, PurpleBuddy *buddy)
 {
-  return "sms";
+    return "phone";
 }
 
 /*
@@ -380,15 +384,7 @@ static PurplePluginProtocolInfo prpl_info =
     0,  /* options */
     NULL,               /* user_splits, initialized in smsprpl_init() */
     NULL,               /* protocol_options, initialized in smsprpl_init() */
-    {   /* icon_spec, a PurpleBuddyIconSpec */
-        "png,jpg,gif",                   /* format */
-        0,                               /* min_width */
-        0,                               /* min_height */
-        128,                             /* max_width */
-        128,                             /* max_height */
-        10000,                           /* max_filesize */
-        PURPLE_ICON_SCALE_DISPLAY,       /* scale_rules */
-    },
+    NO_BUDDY_ICONS,
     smsprpl_list_icon,                  /* list_icon */
     NULL,                                /* list_emblem */
     smsprpl_status_text,                /* status_text */

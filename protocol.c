@@ -16,19 +16,16 @@ static void *tree_create_data(int type, const char *data, uint32_t length);
 static int tree_append(void *structure, char *key, uint32_t key_length, void *obj);
 static int printer_cb (void *userdata, const char *s, uint32_t length);
 
-int json_val_append_string(json_val_t *val_t, char *key, const char *val)
-{
+int json_val_append_string(json_val_t *val_t, char *key, const char *val) {
     json_val_t *elem_val = tree_create_data(JSON_STRING, val, strlen(val));
     return json_val_append_val(val_t, key, elem_val);
 }
 
-int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val)
-{
+int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val) {
     return tree_append(val_t, key, strlen(key), elem_val);
 }
 
-int json_val_free(json_val_t *val)
-{
+int json_val_free(json_val_t *val) {
     int i;
     struct json_val_elem *val_elem;
     if (val->type == JSON_OBJECT_BEGIN) {
@@ -48,8 +45,7 @@ int json_val_free(json_val_t *val)
     return 0;
 }
 
-int json_val_pretty(json_printer *printer, json_val_t *val)
-{
+int json_val_pretty(json_printer *printer, json_val_t *val) {
     int i;
 
     switch(val->type) {
@@ -77,8 +73,7 @@ int json_val_pretty(json_printer *printer, json_val_t *val)
     return 0;
 }
 
-int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val)
-{
+int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val) {
     Buffer ctx;
     enter_func();
     assert (sock == NULL || header == NULL || val == NULL);
@@ -194,34 +189,30 @@ int protocol_encrypt_val(Buffer *ctx, PtlHeader *header, json_val_t *val)
     return 0;
 }
 
-json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header, char dist[20])
+int protocol_vertify(Buffer *buf, PtlHeader *header)
 {
-    Buffer dec_ctx;
+    int ret = strncmp(buf->buffer, header->dist, 20);
+    return ret;
+}
+
+json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header)
+{
     protocol_parser_t parser;
     json_val_t *val;
     aes_context aes;
     unsigned char iv[16];
 
-    buffer_init(&dec_ctx);
-    buffer_split(ctx, &dec_ctx, 20); 
-
     strncpy((char*)iv, header->key, 16);
-    strncpy(dist, ctx->buffer, 20);
-
-    //buffer_padding(&dec_ctx, ' ');
-    
     aes_setkey_dec(&aes, (unsigned char*)header->key, 128);
-    aes_crypt_cbc(&aes, AES_DECRYPT, dec_ctx.pos, 
-            iv, (unsigned char*)dec_ctx.buffer, (unsigned char*)dec_ctx.buffer);
+    aes_crypt_cbc(&aes, AES_DECRYPT, ctx->pos - 20, 
+            iv, (unsigned char*)ctx->buffer + 20, (unsigned char*)ctx->buffer + 20);
     protocol_parser_init(&parser);
-    if (protocol_parser_string(&parser, dec_ctx.buffer, dec_ctx.pos) != 0)
+    if (protocol_parser_string(&parser, ctx->buffer + 20, ctx->pos - 20) != 0)
         return NULL;
     if (!protocol_parser_is_done(&parser))
         return NULL;
-    
     val = parser.parser_dom->root_structure;
     protocol_parser_free (&parser);
-    buffer_free (&dec_ctx);
 
     return val; 
 }

@@ -1,7 +1,6 @@
 #include "buffer.h"
 
-int buffer_init(Buffer *buffer)
-{
+int buffer_init(Buffer *buffer) {
     buffer->buffer = (char *)malloc(INIT_SIZE * sizeof(char));
     buffer->size = INIT_SIZE;
     buffer->pos = 0;
@@ -9,8 +8,7 @@ int buffer_init(Buffer *buffer)
     return 0;
 }
 
-int buffer_update(Buffer *buffer, char *input, int ilen)
-{
+int buffer_update(Buffer *buffer, char *input, int ilen) {
     int total = ilen + buffer->pos;
 
     if (total > buffer->size) {
@@ -22,15 +20,17 @@ int buffer_update(Buffer *buffer, char *input, int ilen)
     return 0;
 }
 
-int buffer_split(Buffer *first, Buffer *second, int size)
-{
-    buffer_update(second, first->buffer + size, first->pos -size);
-    first->pos = size;
+int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen) {
+    buffer_update(dist, source->buffer + begin, ilen);
+
     return 0;
 }
 
-int buffer_padding(Buffer *buffer, char c)
-{
+int buffer_merge_all(Buffer *source, int begin, Buffer *dist) {
+    return buffer_merge(source, begin, dist, source->pos - begin);
+}
+
+int buffer_padding(Buffer *buffer, char c) {
     int i = 16;
     int k;
     while (i < buffer->pos) {
@@ -43,8 +43,7 @@ int buffer_padding(Buffer *buffer, char c)
     return 0;
 }
 
-int buffer_free(Buffer *buffer)
-{
+int buffer_free(Buffer *buffer) {
     free(buffer->buffer);
     buffer->size = 0;
     buffer->pos = 0;

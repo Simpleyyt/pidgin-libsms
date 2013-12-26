@@ -1,8 +1,7 @@
 #include "udp.h" 
 
 
-UdpSocket *udp_init(const char *ip, int port) 
-{
+UdpSocket *udp_init(const char *ip, int port) {
     int sockfd;
     struct sockaddr_in *servaddr = malloc(sizeof(struct sockaddr_in));
     UdpSocket *udp_sock = malloc(sizeof(UdpSocket));
@@ -35,8 +34,7 @@ UdpSocket *udp_init_broadcast(int port) {
     return udp_init("0.0.0.0", port);
 }
 
-int udp_send(UdpSocket *sock, const void *buf, uint32_t length) 
-{
+int udp_send(UdpSocket *sock, const void *buf, uint32_t length) {
     if (sendto(sock->sockfd, buf, length, 0, (struct sockaddr*)(sock->servaddr), sizeof(*sock->servaddr)) < 0) {
         udp_debug_error("Send data error");
         return -1;
@@ -44,8 +42,7 @@ int udp_send(UdpSocket *sock, const void *buf, uint32_t length)
     return 0;
 }
 
-int udp_close(UdpSocket *socket) 
-{
+int udp_close(UdpSocket *socket) {
     udp_debug_info("Closing udp broadcast...");
 
     if (close(socket->sockfd)) {

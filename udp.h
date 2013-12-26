@@ -1,5 +1,5 @@
-#ifndef _UDP_
-#define _UDP_
+#ifndef UDP_H
+#define UDP_H
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -33,15 +33,11 @@ struct _UdpSocket {
     int sockfd;
     struct sockaddr_in *servaddr;
 };
-
 typedef struct _UdpSocket UdpSocket;
 
 UdpSocket *udp_init(const char *ip, int port);
-
 UdpSocket *udp_init_broadcast(int port);
-
 int udp_send(UdpSocket *sock, const void *buf, uint32_t length);
-
 int udp_close(UdpSocket *sock);
 
 #endif
