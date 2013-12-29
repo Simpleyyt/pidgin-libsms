@@ -3,7 +3,7 @@
 
 int main()
 {
-    UdpSocket *sock = udp_init_broadcast(8888);
+    UdpSocket *sock = udp_init_broadcast(8889);
     PtlHeader header;
     protocol_init(&header);
     header.from = "1";

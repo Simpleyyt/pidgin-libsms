@@ -311,7 +311,7 @@ static void smsprpl_login(PurpleAccount *acct)
     
     
     purple_network_listen_map_external(FALSE);
-    ptl_data->udp_listen_data = purple_network_listen(8888, SOCK_DGRAM, udp_listen_cb, gc);
+    ptl_data->udp_listen_data = purple_network_listen(8889, SOCK_DGRAM, udp_listen_cb, gc);
 
     if (ptl_data->udp_listen_data == NULL) {
         smsprpl_debug_error(PRPL_TAG, "listen auth failed\n");

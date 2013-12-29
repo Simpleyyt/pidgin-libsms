@@ -19,6 +19,9 @@ gen_dec.o: gen_dec.c ../*.c ../crypt/*.c
 	./gen_dec.o
 	cp -f test.dec $*.dec
 %.send: %.dec
-	socat pipe:$*.dec udp-sendto:0.0.0.0:8888
+	socat pipe:$*.dec udp-sendto:0.0.0.0:8889
+	
+listen:
+	socat udp-listen:8888 stdout
 clean:
 	-rm -f *.o *.dec
