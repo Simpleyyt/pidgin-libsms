@@ -5,13 +5,11 @@
 int main() 
 {
     PtlHeader header;
-    char *str = "Hello World!";
+    char *str = "Hello World!123456789";
     Buffer buf;
 
-    header.from = "1";
-    header.to = "2";
     protocol_init(&header);
-    protocol_set_key(&header, "user", "pwd");
+    protocol_set_key(&header, "15902054263", "342211815");
     printf("The key:\n");
     printHex(header.key, 16);
     printf("The dist:\n");

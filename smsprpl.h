@@ -17,16 +17,21 @@
 
 #define smsprpl_debug_trace(tag, format, ...) fprintf(stdout, "%s:", tag);\
                                                fprintf(stdout, format,## __VA_ARGS__)
+
+#define AddProcess(TYPE, GC, JSON)    if (strcmp(type, #TYPE) == 0) process_##TYPE(GC, JSON);
+
 typedef struct _PtlData {
     UdpSocket *udp_send_sock;
     int udp_listenfd;
     PurpleNetworkListenData *udp_listen_data;
     guint udp_input_read;
     PtlHeader *header;
+    guint keepalive_timer;
+    guint req_timeout;
 } PtlData;
 
-static void process (PurpleConnection *gc, json_val_t *val);
-static void process_auth (PurpleConnection *gc, json_val_t *val);
-static void process_noti (PurpleConnection *gc, json_val_t *val);
+static void process(PurpleConnection *gc, json_val_t *val);
+static void process_auth(PurpleConnection *gc, json_val_t *val);
+static void process_logout(PurpleConnection *gc, json_val_t *val);
 static void process_msg (PurpleConnection *gc, json_val_t *val);
 static void input_cb (gpointer data, gint source, PurpleInputCondition cond);

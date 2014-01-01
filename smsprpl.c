@@ -87,36 +87,29 @@
 #define RE_N_IF(A);     RE_IF(A, NULL);
 #define RE_1_IF(A);     RE_IF(A, 1);
 
-static char *smsprpl_status_text(PurpleBuddy *buddy) {
-    smsprpl_debug_info("smsprpl", "getting %s's status text for %s\n",
-            buddy->name, buddy->account->username);
+static gboolean KeepAlive(gpointer user_data) {
+    PurpleConnection *gc = user_data;
+    long interval;
+    if (gc->state != PURPLE_CONNECTED)
+        return TRUE;
 
-    if (purple_find_buddy(buddy->account, buddy->name)) {
-        PurplePresence *presence = purple_buddy_get_presence(buddy);
-        PurpleStatus *status = purple_presence_get_active_status(presence);
-        const char *name = purple_status_get_name(status);
-        const char *message = purple_status_get_attr_string(status, "message");
-        char *text;
-
-        purple_presence_switch_status (presence, SMS_STATUS_ONLINE);
-
-        if (message && strlen(message) > 0)
-            text = g_strdup_printf("%s: %s", name, message);
-        else
-            text = g_strdup(name);
-
-        smsprpl_debug_info("smsprpl", "%s's status text is %s\n", buddy->name, text);
-        return text;
-
-    } else {
-        smsprpl_debug_info("smsprpl", "...but %s is not logged in\n", buddy->name);
-        return g_strdup("Not logged in");
-    }
+    interval = time(NULL) - gc->last_received;
+    smsprpl_debug_info("smsprpl", "time interval: %ld\n",interval);
+    if (time(NULL) - gc->last_received < 63)
+        return TRUE;
+    purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Network Error"));
+    return TRUE;
 }
 
-
-static GList *smsprpl_status_types(PurpleAccount *acct)
-{
+static gboolean ReqTimeout(gpointer user_data) {
+    PurpleConnection *gc = user_data;
+    if (gc->state == PURPLE_CONNECTED) {
+        return FALSE;
+    }
+    purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_OTHER_ERROR, _("请求连接超时"));
+    return FALSE;
+}
+static GList *smsprpl_status_types(PurpleAccount *acct) {
     GList *types = NULL;
     PurpleStatusType *type;
 
@@ -146,12 +139,11 @@ static GList *smsprpl_status_types(PurpleAccount *acct)
 }
 
 
-static void process_noti (PurpleConnection *gc, json_val_t *val)
-{
+static void process_logout(PurpleConnection *gc, json_val_t *val) {
+    purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_OTHER_ERROR, _("手机服务被关闭"));
 }
 
-static void process_contact (PurpleConnection *gc, json_val_t *val)
-{
+static void process_contact (PurpleConnection *gc, json_val_t *val) {
     PurpleBuddy *b = NULL;
     PurpleGroup *g = NULL;
     char *phone = protocol_get_string(val, "phone");
@@ -163,26 +155,37 @@ static void process_contact (PurpleConnection *gc, json_val_t *val)
     smsprpl_debug_info("smsprpl", "recieve contact: name:%s; phone:%s; group:%s\n", name, phone, group);
     g = purple_find_group(group);
     if (!g) {
+        smsprpl_debug_info("smsprpl", "Create group");
         g = purple_group_new(group);
     }
     b = purple_find_buddy(gc->account, phone);
     if (!b) {
+        smsprpl_debug_info("smsprpl", "Create buddy");
         b = purple_buddy_new(gc->account, phone, name);
     }
     purple_blist_add_buddy(b, NULL, g, NULL);
     purple_blist_alias_buddy(b, name);
+
+    purple_prpl_got_user_status(gc->account, b->name, SMS_STATUS_ONLINE, NULL);
 }
 
 static void process_auth (PurpleConnection *gc, json_val_t *val)
 {
     char *result = protocol_get_string(val, "result");
+    PtlData *ptl_data = gc->proto_data;
+    
     
     RE_V_IF(gc == NULL || val == NULL || result == NULL);
     smsprpl_debug_info("smsprpl", "the auth result is %s\n", result);
     if (strcmp(result, "success") == 0) {
         smsprpl_debug_info ("smsprpl", "auth succeed\n");
-        purple_connection_update_progress(gc, _("Connected"), 1, 2);
         purple_connection_set_state(gc, PURPLE_CONNECTED);
+
+        if (protocol_req_contact(ptl_data->udp_send_sock, ptl_data->header) == -1) {
+            purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Send req failed"));
+            smsprpl_debug_error(PRPL_TAG, "send req failed\n");
+            return;
+        }
     } else {
         smsprpl_debug_error ("smsprpl", "auth failed\n");
         purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_AUTHENTICATION_FAILED, _("Unable to connect"));
@@ -196,12 +199,53 @@ static void process_msg(PurpleConnection *gc, json_val_t *val)
 
     RE_V_IF(who == NULL || msg == NULL || gc == NULL || val == NULL);
     smsprpl_debug_info(PRPL_TAG, "message come from %s: %s\n", who, msg);
-    serv_got_im(gc, who, msg, 0, time(NULL));
+    serv_got_im(gc, who, msg, PURPLE_MESSAGE_RECV, time(NULL));
 }
 
 static void process_resp (PurpleConnection *gc, json_val_t *val)
 {
    //char *resp = protocol_get_string_val(val, "resp", NULL); 
+}
+
+static void process_req(PurpleConnection *gc, json_val_t *val) {
+    char *ip = protocol_get_string(val, "host");
+    PurpleAccount *acct = gc->account;
+    char *username = (char *)purple_account_get_username(acct);
+    char *password = (char *)purple_account_get_password(acct);
+    PtlData *ptl_data = gc->proto_data;
+    PurpleBuddy *buddy;
+    GSList *list;
+    int count = 0;
+
+    ptl_data->udp_send_sock = udp_init(ip, 8888);
+
+    smsprpl_debug_info ("smsprpl", "auth succeed\n");
+    purple_connection_update_progress(gc, _("Connected"), 1, 2);
+    purple_connection_set_state(gc, PURPLE_CONNECTED);
+
+    list = purple_find_buddies(gc->account, NULL);
+
+    for (; list; list = list->next) {
+        buddy = list->data;
+        if (buddy != NULL && buddy->name != NULL) {
+            count++;
+            purple_prpl_got_user_status(gc->account, buddy->name, SMS_STATUS_ONLINE, NULL);
+        }
+    }
+    
+    if (protocol_send_auth(ptl_data->udp_send_sock, ptl_data->header, (const char*)username, (const char*)password) == -1) {
+        purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Send auth failed"));
+        smsprpl_debug_error(PRPL_TAG, "send auth failed\n");
+        return;
+    }
+
+    if (count == 0)
+        if (protocol_req_contact(ptl_data->udp_send_sock, ptl_data->header) == -1) {
+            purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Send req failed"));
+            smsprpl_debug_error(PRPL_TAG, "send req failed\n");
+            return;
+        }
+
 }
 
 static void process (PurpleConnection *gc, json_val_t *root)
@@ -212,16 +256,12 @@ static void process (PurpleConnection *gc, json_val_t *root)
     type = protocol_get_string(root, "type");
     RE_V_IF(type == NULL);
     smsprpl_debug_info("smsprpl", "the package type is %s\n", type);
-    if (strcmp(type, "resp") == 0)
-        process_resp(gc, root);
-    if (strcmp(type, "contact") == 0)
-        process_contact(gc, root);
-    if (strcmp(type, "auth") == 0)
-        process_auth(gc, root);
-    if (strcmp(type, "msg") == 0)
-        process_msg(gc, root);
-    if (strcmp(type, "noti") == 0)
-        process_noti(gc, root);
+    AddProcess(resp, gc, root);
+    AddProcess(contact, gc, root);
+    AddProcess(auth, gc, root);
+    AddProcess(msg, gc, root);
+    AddProcess(req, gc, root);
+    AddProcess(logout, gc, root);
 }
 
 static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
@@ -232,11 +272,11 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
     char buffer[BUFFER_SIZE]; 
     Buffer ctx;
     json_val_t *val;
-    
+
     RE_V_IF(source <= 0 || gc == NULL);
     buffer_init(&ctx);
     smsprpl_debug_info("smsprpl", "received data\n");
-    
+
     while (1) {
         read_num = read(source, buffer, BUFFER_SIZE);
         if (read_num <= 0)
@@ -248,11 +288,20 @@ static void input_cb (gpointer data, gint source, PurpleInputCondition cond)
         smsprpl_debug_info(PRPL_TAG, "packet is not matched\n");
         return;
     }
+
+    gc->last_received = time(NULL);
+
+    if (ctx.pos == 20) {
+        smsprpl_debug_info(PRPL_TAG, "Heartbeat\n");
+        buffer_free(&ctx);
+        return;
+    }
+
     val = protocol_decrypt_string(&ctx, ptl_data->header);
     RE_V_IF(val == NULL);
 
     val = protocol_get_val(val, "data");
-    
+
     process(gc, val);
     buffer_free(&ctx);
 }
@@ -282,6 +331,7 @@ static void smsprpl_login(PurpleAccount *acct)
     PtlData *ptl_data = (PtlData*)malloc(sizeof(PtlData));
     PtlHeader *header = (PtlHeader*)malloc(sizeof(PtlHeader));
 
+
     smsprpl_debug_info(PRPL_TAG, "enter login\n");
 
     protocol_init(header);
@@ -294,22 +344,19 @@ static void smsprpl_login(PurpleAccount *acct)
     ptl_data->udp_listenfd = -1;
     ptl_data->udp_send_sock = NULL;
     ptl_data->header = header;
+    ptl_data->keepalive_timer = purple_timeout_add_seconds(30, KeepAlive, gc);
+    ptl_data->req_timeout = purple_timeout_add_seconds(90, ReqTimeout, gc);
 
     gc->proto_data = ptl_data;
+    gc->last_received = time(NULL);
 
-    ptl_data->udp_send_sock = udp_init_broadcast(8888);
 
     purple_connection_update_progress(gc, _("Connecting"), 0, 2); 
 
-    if (protocol_send_auth(ptl_data->udp_send_sock, header, username, password) == -1) {
-        purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_NETWORK_ERROR, _("Send auth failed"));
-        smsprpl_debug_error(PRPL_TAG, "send auth failed\n");
-        return;
-    }
 
     smsprpl_debug_info(PRPL_TAG, "logging in %s\n", acct->username);
-    
-    
+
+
     purple_network_listen_map_external(FALSE);
     ptl_data->udp_listen_data = purple_network_listen(8889, SOCK_DGRAM, udp_listen_cb, gc);
 
@@ -330,11 +377,15 @@ static void smsprpl_close(PurpleConnection *gc)
     if (gc->proto_data == NULL)
         return;
     ptl_data = (PtlData*)gc->proto_data;
+    protocol_send_logout(ptl_data->udp_send_sock, ptl_data->header);
     if (ptl_data->udp_listenfd > 0) {
         close(ptl_data->udp_listenfd);
     }
-    if (ptl_data->udp_listen_data != NULL) {
-        purple_network_listen_cancel(ptl_data->udp_listen_data);
+//    if (ptl_data->udp_listen_data != NULL) {
+//        purple_network_listen_cancel(ptl_data->udp_listen_data);
+//    }
+    if (ptl_data->keepalive_timer > 0) {
+        purple_timeout_remove(ptl_data->keepalive_timer);
     }
     if (ptl_data->udp_input_read > 0) {
         purple_input_remove(ptl_data->udp_input_read);
@@ -348,16 +399,16 @@ static void smsprpl_close(PurpleConnection *gc)
 static int smsprpl_send_im(PurpleConnection *gc, const char *who,
         const char *message, PurpleMessageFlags flags)
 {
-    //PtlData *ptl_data = (PtlData*)gc->proto_data;
+    PtlData *ptl_data = (PtlData*)gc->proto_data;
 
     smsprpl_debug_info("smsprpl", "sending message to %s: %s\n",
             who, message);
 
-   // if (protocol_send_msg(ptl_data->udp_send_sock, who, message) != 0) {
-   //     smsprpl_debug_info("smsprpl", "Send msg error\n");
-   //     purple_conv_present_error(who, gc->account, _("Send msg error"));
-   //     return 0;
-   // }
+    if (protocol_send_msg(ptl_data->udp_send_sock, ptl_data->header,  who, message) != 0) {
+        smsprpl_debug_info("smsprpl", "Send msg error\n");
+        purple_conv_present_error(who, gc->account, _("Send msg error"));
+        return 0;
+    }
 
     return 1;
 }
@@ -365,15 +416,21 @@ static int smsprpl_send_im(PurpleConnection *gc, const char *who,
 
 
 static void smsprpl_set_status(PurpleAccount *acct, PurpleStatus *status) {
-  const char *msg = purple_status_get_attr_string(status, "message");
-  purple_debug_info("smsprpl", "setting %s's status to %s: %s\n",
-                    acct->username, purple_status_get_name(status), msg);
+    const char *msg = purple_status_get_attr_string(status, "message");
+    purple_debug_info("smsprpl", "setting %s's status to %s: %s\n",
+            acct->username, purple_status_get_name(status), msg);
 }
 
 static const char *smsprpl_list_icon(PurpleAccount *acct, PurpleBuddy *buddy)
 {
-    return "phone";
+    return "pidgin_sms";
 }
+
+static void smsprpl_keepalive(PurpleConnection *gc) {
+    PtlData *ptl_data = (PtlData*)gc->proto_data;
+    protocol_send_keepalive(ptl_data->udp_send_sock,ptl_data->header);
+}
+
 
 /*
  * prpl stuff. see prpl.h for more information.
@@ -381,13 +438,13 @@ static const char *smsprpl_list_icon(PurpleAccount *acct, PurpleBuddy *buddy)
 
 static PurplePluginProtocolInfo prpl_info =
 {
-    0,  /* options */
-    NULL,               /* user_splits, initialized in smsprpl_init() */
-    NULL,               /* protocol_options, initialized in smsprpl_init() */
+    0,                       /* options */
+    NULL,                    /* user_splits, initialized in smsprpl_init() */
+    NULL,                    /* protocol_options, initialized in smsprpl_init() */
     NO_BUDDY_ICONS,
-    smsprpl_list_icon,                  /* list_icon */
+    smsprpl_list_icon,       /* list_icon */
     NULL,                                /* list_emblem */
-    smsprpl_status_text,                /* status_text */
+    NULL,                /* status_text */
     NULL,               /* tooltip_text */
     smsprpl_status_types,               /* status_types */
     NULL,                                /* blist_node_menu */
@@ -418,7 +475,7 @@ static PurplePluginProtocolInfo prpl_info =
     NULL,                 /* chat_leave */
     NULL,               /* chat_whisper */
     NULL,                  /* chat_send */
-    NULL,                                /* keepalive */
+    smsprpl_keepalive,  /* keepalive */
     NULL,              /* register_user */
     NULL,                /* get_cb_info */
     NULL,                                /* get_cb_away */
@@ -478,10 +535,10 @@ static PurplePluginInfo info =
     NULL,                                                    /* dependencies */
     PURPLE_PRIORITY_DEFAULT,                                 /* priority */
     SMSPRPL_ID,                                             /* id */
-    "SMS - Send sms via phone",                                 /* name */
+    "Pidgin短信",                                 /* name */
     DISPLAY_VERSION,                                         /* version */
-    N_("SMS Protocol Plugin"),                              /* summary */
-    N_("SMS Protocol Plugin"),                              /* description */
+    N_("Pidgin SMS Protocol Plugin"),                              /* summary */
+    N_("Pidgin SMS Protocol Plugin"),                              /* description */
     NULL,                                                    /* author */
     PURPLE_WEBSITE,                                          /* homepage */
     NULL,                                                    /* load */
@@ -497,4 +554,4 @@ static PurplePluginInfo info =
     NULL,
 };
 
-PURPLE_INIT_PLUGIN(sms, smsprpl_init, info);
+PURPLE_INIT_PLUGIN(pidgin_sms, smsprpl_init, info);

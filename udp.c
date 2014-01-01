@@ -31,29 +31,7 @@ UdpSocket *udp_init(const char *ip, int port) {
 }
 
 UdpSocket *udp_init_broadcast(int port) {
-    int sockfd;
-    struct sockaddr_in *servaddr = malloc(sizeof(struct sockaddr_in));
-    UdpSocket *udp_sock = malloc(sizeof(UdpSocket));
-
-    //Create ip address
-    memset(servaddr, 0, sizeof(*servaddr));
-    servaddr->sin_family = AF_INET;
-    servaddr->sin_port = htons(port);
-    servaddr->sin_addr.s_addr = htonl(INADDR_BROADCAST);
-
-    udp_sock->servaddr = servaddr;    
-
-    //Create socket
-    udp_debug_info("Creating udp socket. Port:%d ...", port);
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        udp_debug_error("Create udp socket error");
-        return NULL;
-    }
-
-    udp_debug_info("Initialized socket");
-    udp_sock->sockfd = sockfd;
-    return udp_sock;
+    return udp_init("255.255.255.255", port);
 }
 
 int udp_send(UdpSocket *sock, const void *buf, uint32_t length) {

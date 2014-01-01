@@ -67,6 +67,10 @@ int protocol_encrypt_val(Buffer *ctx, PtlHeader *header, json_val_t *val);
 int protocol_encrypt_string(Buffer *ctx, PtlHeader *header);
 int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val);
 int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd);
+int protocol_send_msg(UdpSocket *sock, PtlHeader *header, const char *who, const char *message);
+int protocol_req_contact(UdpSocket *sock, PtlHeader *header);
+int protocol_send_keepalive(UdpSocket *sock, PtlHeader *header);
+int protocol_send_logout(UdpSocket *sock, PtlHeader *header);
 
 //Protocol parser
 int protocol_parser_init(protocol_parser_t *parser);

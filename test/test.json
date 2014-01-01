@@ -1,9 +1,9 @@
 {
-    "from" : "1",
-    "to"   : "2",
     "ver"  : "1.0",
     "data" : {
-        "type"   : "auth",
-        "result" : "success"
+        "type" : "contact",
+        "name" : "Yitao",
+        "phone": "123",
+        "group": "group"
     }
 }

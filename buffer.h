@@ -15,7 +15,8 @@ typedef struct _Buffer {
 
 int buffer_init(Buffer *ctx);
 int buffer_update(Buffer *ctx, char *input, int ilen);
-int buffer_padding(Buffer *buffer, char c);
+int buffer_padding(Buffer *buffer);
+int buffer_depadding(Buffer *buffer);
 int buffer_merge_all(Buffer *source, int begin, Buffer *dist);
 int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen);
 int buffer_free(Buffer *ctx);

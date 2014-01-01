@@ -1,6 +1,9 @@
 {
-    "type" : "contact",
-    "name" : "Yitao",
-    "phone": "123",
-    "group": "group"
+    "ver"  : "1.0",
+    "data" : {
+        "type" : "contact",
+        "name" : "Yitao",
+        "phone": "123",
+        "group": "group"
+    }
 }

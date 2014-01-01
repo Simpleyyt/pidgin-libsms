@@ -75,14 +75,24 @@ int json_val_pretty(json_printer *printer, json_val_t *val) {
 
 int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val) {
     Buffer ctx;
+    Buffer data;
     enter_func();
-    assert (sock == NULL || header == NULL || val == NULL);
+    assert (sock == NULL || header == NULL);
 
     buffer_init(&ctx);
-    protocol_encrypt_val(&ctx, header, val);
-    udp_send(sock, header->dist, 20);
-    udp_send(sock, ctx.buffer, ctx.pos);
+
+    if (val != NULL)
+        protocol_encrypt_val(&ctx, header, val);
+
+    buffer_init(&data);
+    buffer_update(&data, header->dist, 20);
+
+    if (val != NULL)
+        buffer_merge_all(&ctx, 0, &data);
+    
+    udp_send(sock, data.buffer, data.pos);
     buffer_free(&ctx);
+    buffer_free(&data);
 
     leave_func();
     return 0;
@@ -103,10 +113,74 @@ int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, con
     assert(header->from == NULL || header->to == NULL || header->ver == NULL);
 
     json_val_append_string(val, "type", "login");
-    json_val_append_string(val, "user", user);
-    json_val_append_string(val, "pwd", pwd);
-    json_val_append_string(root, "from", header->from);
-    json_val_append_string(root, "to", header->to);
+    //json_val_append_string(val, "user", user);
+    //json_val_append_string(val, "pwd", pwd);
+    json_val_append_string(root, "ver", header->ver);
+    json_val_append_val(root, "data", val);
+    protocol_send_val(sock, header, root);
+    json_val_free(root);
+    free(root);
+
+    leave_func();
+    return 0;
+}
+
+int protocol_send_logout(UdpSocket *sock, PtlHeader *header) {
+    json_val_t *root = json_val_create(1);
+    json_val_t *val = json_val_create(1);
+    
+    enter_func();
+
+    json_val_append_string(val, "type", "logout");
+    json_val_append_string(root, "ver", header->ver);
+    json_val_append_val(root, "data", val);
+    protocol_send_val(sock, header, root);
+    json_val_free(root);
+    free(root);
+
+    leave_func();
+    return 0;
+}
+
+int protocol_send_keepalive(UdpSocket *sock, PtlHeader *header) {
+    enter_func();
+    protocol_send_val(sock, header, NULL);
+    leave_func();
+    return 0;
+}
+int protocol_send_msg(UdpSocket *sock, PtlHeader *header, const char *who, const char *msg)
+{
+    json_val_t *root = json_val_create(1);
+    json_val_t *val = json_val_create(1);
+    
+    enter_func();
+    assert(sock == NULL || header == NULL || who == NULL || msg == NULL);
+    assert(header->from == NULL || header->to == NULL || header->ver == NULL);
+
+    json_val_append_string(val, "type", "msg");
+    json_val_append_string(val, "who", who);
+    json_val_append_string(val, "msg", msg);
+    json_val_append_string(root, "ver", header->ver);
+    json_val_append_val(root, "data", val);
+    protocol_send_val(sock, header, root);
+    json_val_free(root);
+    free(root);
+
+    leave_func();
+    return 0;
+}
+
+int protocol_req_contact(UdpSocket *sock, PtlHeader *header)
+{
+    json_val_t *root = json_val_create(1);
+    json_val_t *val = json_val_create(1);
+    
+    enter_func();
+    assert(sock == NULL || header == NULL);
+
+    assert(header->from == NULL || header->to == NULL || header->ver == NULL);
+
+    json_val_append_string(val, "type", "reqcontact");
     json_val_append_string(root, "ver", header->ver);
     json_val_append_val(root, "data", val);
     protocol_send_val(sock, header, root);
@@ -166,10 +240,10 @@ int protocol_encrypt_string(Buffer *ctx, PtlHeader *header)
     enter_func();
     assert(ctx == NULL || header == NULL);
 
-    buffer_padding(ctx, ' ');
+    protocol_debug_trace("Before encrypt:\n%s\nlength:%d\n", ctx->buffer, ctx->pos);
+    buffer_padding(ctx);
     assert(header->key == NULL);
     strncpy((char *)iv, header->key, 16);
-    protocol_debug_trace("Before encrypt:\n%s\nlength:%d\n", ctx->buffer, ctx->pos);
     aes_setkey_enc(&aes, (unsigned char*)header->key, 128);
     aes_crypt_cbc(&aes, AES_ENCRYPT, ctx->pos,
             iv, (unsigned char*)ctx->buffer, (unsigned char*)ctx->buffer);
@@ -206,6 +280,7 @@ json_val_t *protocol_decrypt_string(Buffer *ctx, PtlHeader *header)
     aes_setkey_dec(&aes, (unsigned char*)header->key, 128);
     aes_crypt_cbc(&aes, AES_DECRYPT, ctx->pos - 20, 
             iv, (unsigned char*)ctx->buffer + 20, (unsigned char*)ctx->buffer + 20);
+    buffer_depadding(ctx);
     protocol_parser_init(&parser);
     if (protocol_parser_string(&parser, ctx->buffer + 20, ctx->pos - 20) != 0)
         return NULL;

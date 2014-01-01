@@ -1,6 +1,10 @@
 SHELL = /bin/bash
 libdir = /usr/lib
 PURPLE_MAJOR_VERSION = 2
+pixmapsdir = /usr/share/pixmaps/pidgin/protocols
+pixmaps_16 = $(pixmapsdir)/16
+pixmaps_22 = $(pixmapsdir)/22
+pixmaps_48 = $(pixmapsdir)/48
 libpurple_dir = ./libpurple/
 libsms_la_OBJECTS = smsprpl.lo udp.lo protocol.lo json.lo buffer.lo aes.lo sha1.lo padlock.lo
 LTLIBRARIES = libsms.la
@@ -51,6 +55,12 @@ libsms.la: $(libsms_la_OBJECTS)
 
 install: all
 	@$(MAKE) $(AM_MAKEFLAGS) install-pkgLTLIBRARIES
+	-mkdir -p $(pixmaps_16)
+	-mkdir -p $(pixmaps_22)
+	-mkdir -p $(pixmaps_48)
+	cp -f ./icons/pidgin_sms_22_c.png $(pixmaps_16)/pidgin_sms.png
+	cp -f ./icons/pidgin_sms_32_c.png $(pixmaps_22)/pidgin_sms.png
+	cp -f ./icons/pidgin_sms_64_c.png $(pixmaps_48)/pidgin_sms.png
 
 install-pkgLTLIBRARIES: $(pkg_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -82,6 +92,9 @@ clean-pkgLTLIBRARIES:
 	done
 
 uninstall: uninstall-pkgLTLIBRARIES
+	-rm -f $(pixmaps_16)/pidgin_sms.png
+	-rm -f $(pixmaps_22)/pidgin_sms.png
+	-rm -f $(pixmaps_48)/pidgin_sms.png
 
 uninstall-pkgLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)

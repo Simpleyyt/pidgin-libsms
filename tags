@@ -18,8 +18,10 @@ ALLOW_TAG_ALT	libpurple/util.c	1345;"	d	file:
 ATTRIB_MAPPEDADDRESS	libpurple/stun.c	54;"	d	file:
 AUTH_LISTEN_PORT	smsprpl.h	7;"	d
 AUTH_SEND_PORT	smsprpl.h	6;"	d
+AddProcess	smsprpl.h	21;"	d
 BOUNDARY	libpurple/mime.c	439;"	d	file:
 BOUNDARY	libpurple/mime.c	466;"	d	file:
+BUFFER_H	buffer.h	2;"	d
 BUFFER_SIZE	smsprpl.h	9;"	d
 BUF_LEN	libpurple/internal.h	75;"	d
 BUF_LONG	libpurple/internal.h	76;"	d
@@ -109,8 +111,10 @@ CALL_FN_v_v	libpurple/valgrind.h	599;"	d
 CANDIDATES_PREPARED	libpurple/media.c	/^	CANDIDATES_PREPARED,$/;"	e	enum:__anon76	file:
 CANDIDATES_PREPARED	libpurple/media/backend-iface.c	/^	CANDIDATES_PREPARED,$/;"	e	enum:__anon125	file:
 CC	Makefile	/^CC = gcc$/;"	m
+CC	test/Makefile	/^CC = gcc$/;"	m
 CCLD	Makefile	/^CCLD = $(CC)$/;"	m
 CFLAGS	Makefile	/^CFLAGS = -g -g -O2$/;"	m
+CFLAGS	test/Makefile	/^CFLAGS = $/;"	m
 CHECK_ERROR	libpurple/dbus-bindings.h	47;"	d
 CHECK_QUOTE	libpurple/util.c	1435;"	d	file:
 CHECK_QUOTE	libpurple/util.c	1864;"	d	file:
@@ -118,7 +122,6 @@ CHK	json.c	530;"	d	file:
 CODECS_CHANGED	libpurple/media.c	/^	CODECS_CHANGED,$/;"	e	enum:__anon76	file:
 CODECS_CHANGED	libpurple/media/backend-iface.c	/^	CODECS_CHANGED,$/;"	e	enum:__anon125	file:
 CONFIG_ARGS	libpurple/config.h	8;"	d
-CONTEXT_H	buffer.h	2;"	d
 CPPFLAGS	Makefile	/^CPPFLAGS = $(GLIB_CFLAGS) \\$/;"	m
 C_ABCDF	json.c	/^	C_ABCDF, C_E, \/* caps letters *\/$/;"	e	enum:classes	file:
 C_BACKS	json.c	/^	C_BACKS, \/* \\ *\/$/;"	e	enum:classes	file:
@@ -811,6 +814,7 @@ HTTP_HEADER_ACTION	libpurple/upnp.c	72;"	d	file:
 HTTP_OK	libpurple/upnp.c	41;"	d	file:
 HX_SIZE_OF_IFREQ	libpurple/network.c	65;"	d	file:
 HX_SIZE_OF_IFREQ	libpurple/network.c	67;"	d	file:
+INCLUDE	test/Makefile	/^INCLUDE = -I. -I..\/ -I..\/crypt\/$/;"	m
 INCLUDES	Makefile	/^INCLUDES = -I. -I$(libpurple_dir) -I.\/crypt\/$/;"	m
 INET6_ADDRSTRLEN	libpurple/proxy.c	2150;"	d	file:
 INIT_MEDIA	libpurple/mediamanager.c	/^	INIT_MEDIA,$/;"	e	enum:__anon68	file:
@@ -863,6 +867,7 @@ K	crypt/sha1.c	192;"	d	file:
 K	crypt/sha1.c	196;"	d	file:
 K	crypt/sha1.c	219;"	d	file:
 KEEPALIVE_INTERVAL	libpurple/connection.c	43;"	d	file:
+KeepAlive	smsprpl.c	/^static gboolean KeepAlive(gpointer user_data) {$/;"	f	file:	signature:(gpointer user_data)
 KeyDef	libpurple/desktopitem.c	/^	KeyDef,$/;"	e	enum:__anon49	file:
 KeyDefOnKey	libpurple/desktopitem.c	/^	KeyDefOnKey,$/;"	e	enum:__anon49	file:
 KeyValue	libpurple/desktopitem.c	/^	KeyValue$/;"	e	enum:__anon49	file:
@@ -2061,11 +2066,13 @@ S_ERROR	libpurple/media/backend-iface.c	/^	S_ERROR,$/;"	e	enum:__anon125	file:
 Section	libpurple/desktopitem.c	/^} Section;$/;"	t	typeref:struct:__anon47	file:
 StunCallback	libpurple/gaim-compat.h	2046;"	d
 StunCallback	libpurple/stun.h	/^typedef void (*StunCallback) (PurpleStunNatDiscovery *);$/;"	t
+TESTHELPER_H	test/testhelper.h	2;"	d
 TRACING	json.c	32;"	d	file:
 TRACING	json.c	34;"	d	file:
 TYPE_IS_CONTAINER	libpurple/dbus-server.c	224;"	d	file:
 T_SRV	libpurple/dnssrv.c	46;"	d	file:
 T_TXT	libpurple/dnssrv.c	49;"	d	file:
+UDP_H	udp.h	2;"	d
 UI_CAPS_CHANGED	libpurple/mediamanager.c	/^	UI_CAPS_CHANGED,$/;"	e	enum:__anon68	file:
 UPnPDiscoveryData	libpurple/upnp.c	/^} UPnPDiscoveryData;$/;"	t	typeref:struct:__anon64	file:
 UPnPMappingAddRemove	libpurple/gaim-compat.h	2054;"	d
@@ -2308,6 +2315,8 @@ _PURPLE_XMLNODE_C_	libpurple/xmlnode.c	30;"	d	file:
 _PURPLE_XMLNODE_H_	libpurple/xmlnode.h	27;"	d
 _PtlData	smsprpl.h	/^typedef struct _PtlData {$/;"	s
 _PtlData::header	smsprpl.h	/^    PtlHeader *header;$/;"	m	struct:_PtlData	access:public
+_PtlData::keepalive_timer	smsprpl.h	/^    guint keepalive_timer;$/;"	m	struct:_PtlData	access:public
+_PtlData::req_timeout	smsprpl.h	/^    guint req_timeout;$/;"	m	struct:_PtlData	access:public
 _PtlData::udp_input_read	smsprpl.h	/^    guint udp_input_read;$/;"	m	struct:_PtlData	access:public
 _PtlData::udp_listen_data	smsprpl.h	/^    PurpleNetworkListenData *udp_listen_data;$/;"	m	struct:_PtlData	access:public
 _PtlData::udp_listenfd	smsprpl.h	/^    int udp_listenfd;$/;"	m	struct:_PtlData	access:public
@@ -3380,7 +3389,6 @@ _PurpleXferPrivData::ready	libpurple/ft.c	/^	} ready;$/;"	m	struct:_PurpleXferPr
 _PurpleXferPrivData::thumbnail_data	libpurple/ft.c	/^	gpointer thumbnail_data;		\/**< thumbnail image *\/$/;"	m	struct:_PurpleXferPrivData	file:	access:public
 _PurpleXferPrivData::thumbnail_mimetype	libpurple/ft.c	/^	gchar *thumbnail_mimetype;$/;"	m	struct:_PurpleXferPrivData	file:	access:public
 _PurpleXferPrivData::thumbnail_size	libpurple/ft.c	/^	gsize thumbnail_size;$/;"	m	struct:_PurpleXferPrivData	file:	access:public
-_UDP_	udp.h	2;"	d
 _UPnPMappingAddRemove	libpurple/upnp.c	/^struct _UPnPMappingAddRemove$/;"	s	file:
 _UPnPMappingAddRemove::add	libpurple/upnp.c	/^	gboolean add;$/;"	m	struct:_UPnPMappingAddRemove	file:	access:public
 _UPnPMappingAddRemove::cb	libpurple/upnp.c	/^	PurpleUPnPCallback cb;$/;"	m	struct:_UPnPMappingAddRemove	file:	access:public
@@ -4047,24 +4055,26 @@ buffer	libpurple/circbuffer.h	/^	gchar *buffer;$/;"	m	struct:_PurpleCircBuffer	a
 buffer	libpurple/ft.c	/^	GByteArray *buffer;$/;"	m	struct:_PurpleXferPrivData	file:	access:public
 buffer	libpurple/pounce.c	/^	GString *buffer;$/;"	m	struct:__anon7	file:	access:public
 buffer	libpurple/request.h	/^			const char *buffer;$/;"	m	struct:_PurpleRequestField::__anon140::__anon147	access:public
-buffer_free	buffer.c	/^int buffer_free(Buffer *buffer)$/;"	f	signature:(Buffer *buffer)
+buffer_depadding	buffer.c	/^int buffer_depadding(Buffer *buffer) {$/;"	f	signature:(Buffer *buffer)
+buffer_depadding	buffer.h	/^int buffer_depadding(Buffer *buffer);$/;"	p	signature:(Buffer *buffer)
+buffer_free	buffer.c	/^int buffer_free(Buffer *buffer) {$/;"	f	signature:(Buffer *buffer)
 buffer_free	buffer.h	/^int buffer_free(Buffer *ctx);$/;"	p	signature:(Buffer *ctx)
 buffer_grow	json.c	/^static int buffer_grow(json_parser *parser)$/;"	f	file:	signature:(json_parser *parser)
-buffer_init	buffer.c	/^int buffer_init(Buffer *buffer)$/;"	f	signature:(Buffer *buffer)
+buffer_init	buffer.c	/^int buffer_init(Buffer *buffer) {$/;"	f	signature:(Buffer *buffer)
 buffer_init	buffer.h	/^int buffer_init(Buffer *ctx);$/;"	p	signature:(Buffer *ctx)
 buffer_initial_size	json.h	/^	uint32_t buffer_initial_size;$/;"	m	struct:__anon151	access:public
-buffer_merge	buffer.c	/^int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen)$/;"	f	signature:(Buffer *source, int begin, Buffer *dist, int ilen)
+buffer_merge	buffer.c	/^int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen) {$/;"	f	signature:(Buffer *source, int begin, Buffer *dist, int ilen)
 buffer_merge	buffer.h	/^int buffer_merge(Buffer *source, int begin, Buffer *dist, int ilen);$/;"	p	signature:(Buffer *source, int begin, Buffer *dist, int ilen)
-buffer_merge_all	buffer.c	/^int buffer_merge_all(Buffer *source, int begin, Buffer *dist)$/;"	f	signature:(Buffer *source, int begin, Buffer *dist)
+buffer_merge_all	buffer.c	/^int buffer_merge_all(Buffer *source, int begin, Buffer *dist) {$/;"	f	signature:(Buffer *source, int begin, Buffer *dist)
 buffer_merge_all	buffer.h	/^int buffer_merge_all(Buffer *source, int begin, Buffer *dist);$/;"	p	signature:(Buffer *source, int begin, Buffer *dist)
 buffer_offset	json.h	/^	uint32_t buffer_offset;$/;"	m	struct:json_parser	access:public
-buffer_padding	buffer.c	/^int buffer_padding(Buffer *buffer, char c)$/;"	f	signature:(Buffer *buffer, char c)
-buffer_padding	buffer.h	/^int buffer_padding(Buffer *buffer, char c);$/;"	p	signature:(Buffer *buffer, char c)
+buffer_padding	buffer.c	/^int buffer_padding(Buffer *buffer) {$/;"	f	signature:(Buffer *buffer)
+buffer_padding	buffer.h	/^int buffer_padding(Buffer *buffer);$/;"	p	signature:(Buffer *buffer)
 buffer_policy_table	json.c	/^static const uint8_t buffer_policy_table[NR_STATES][NR_CLASSES] = {$/;"	v	file:
 buffer_push	json.c	/^static int buffer_push(json_parser *parser, unsigned char c)$/;"	f	file:	signature:(json_parser *parser, unsigned char c)
 buffer_push_escape	json.c	/^static int buffer_push_escape(json_parser *parser, unsigned char next)$/;"	f	file:	signature:(json_parser *parser, unsigned char next)
 buffer_size	json.h	/^	uint32_t buffer_size;$/;"	m	struct:json_parser	access:public
-buffer_update	buffer.c	/^int buffer_update(Buffer *buffer, char *input, int ilen)$/;"	f	signature:(Buffer *buffer, char *input, int ilen)
+buffer_update	buffer.c	/^int buffer_update(Buffer *buffer, char *input, int ilen) {$/;"	f	signature:(Buffer *buffer, char *input, int ilen)
 buffer_update	buffer.h	/^int buffer_update(Buffer *ctx, char *input, int ilen);$/;"	p	signature:(Buffer *ctx, char *input, int ilen)
 buflen	libpurple/circbuffer.h	/^	gsize buflen;$/;"	m	struct:_PurpleCircBuffer	access:public
 bufused	libpurple/circbuffer.h	/^	gsize bufused;$/;"	m	struct:_PurpleCircBuffer	access:public
@@ -6151,9 +6161,9 @@ json_val::__anon154::object	protocol.h	/^        struct json_val_elem **object;$
 json_val::length	protocol.h	/^    int length;$/;"	m	struct:json_val	access:public
 json_val::type	protocol.h	/^    int type;$/;"	m	struct:json_val	access:public
 json_val::u	protocol.h	/^    } u;$/;"	m	struct:json_val	typeref:union:json_val::__anon154	access:public
-json_val_append_string	protocol.c	/^int json_val_append_string(json_val_t *val_t, char *key, const char *val)$/;"	f	signature:(json_val_t *val_t, char *key, const char *val)
+json_val_append_string	protocol.c	/^int json_val_append_string(json_val_t *val_t, char *key, const char *val) {$/;"	f	signature:(json_val_t *val_t, char *key, const char *val)
 json_val_append_string	protocol.h	/^int json_val_append_string(json_val_t *val_t, char *key, const char *val);$/;"	p	signature:(json_val_t *val_t, char *key, const char *val)
-json_val_append_val	protocol.c	/^int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val)$/;"	f	signature:(json_val_t *val_t, char *key, json_val_t *elem_val)
+json_val_append_val	protocol.c	/^int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val) {$/;"	f	signature:(json_val_t *val_t, char *key, json_val_t *elem_val)
 json_val_append_val	protocol.h	/^int json_val_append_val(json_val_t *val_t, char *key, json_val_t *elem_val);$/;"	p	signature:(json_val_t *val_t, char *key, json_val_t *elem_val)
 json_val_create	protocol.c	/^json_val_t *json_val_create(int is_object)$/;"	f	signature:(int is_object)
 json_val_create	protocol.h	/^json_val_t *json_val_create(int is_object);$/;"	p	signature:(int is_object)
@@ -6161,13 +6171,14 @@ json_val_elem	protocol.h	/^struct json_val_elem {$/;"	s
 json_val_elem::key	protocol.h	/^    char *key;$/;"	m	struct:json_val_elem	access:public
 json_val_elem::key_length	protocol.h	/^    uint32_t key_length;$/;"	m	struct:json_val_elem	access:public
 json_val_elem::val	protocol.h	/^    struct json_val *val;$/;"	m	struct:json_val_elem	typeref:struct:json_val_elem::json_val	access:public
-json_val_free	protocol.c	/^int json_val_free(json_val_t *val)$/;"	f	signature:(json_val_t *val)
+json_val_free	protocol.c	/^int json_val_free(json_val_t *val) {$/;"	f	signature:(json_val_t *val)
 json_val_free	protocol.h	/^int json_val_free(json_val_t *val);$/;"	p	signature:(json_val_t *val)
-json_val_pretty	protocol.c	/^int json_val_pretty(json_printer *printer, json_val_t *val)$/;"	f	signature:(json_printer *printer, json_val_t *val)
+json_val_pretty	protocol.c	/^int json_val_pretty(json_printer *printer, json_val_t *val) {$/;"	f	signature:(json_printer *printer, json_val_t *val)
 json_val_pretty	protocol.h	/^int json_val_pretty(json_printer *printer, json_val_t *val);$/;"	p	signature:(json_printer *printer, json_val_t *val)
 json_val_t	protocol.h	/^} json_val_t;$/;"	t	typeref:struct:json_val
 keepalive	libpurple/connection.h	/^	guint keepalive;             \/**< Keep-alive.                        *\/$/;"	m	struct:_PurpleConnection	access:public
 keepalive	libpurple/prpl.h	/^	void (*keepalive)(PurpleConnection *);$/;"	m	struct:_PurplePluginProtocolInfo	access:public
+keepalive_timer	smsprpl.h	/^    guint keepalive_timer;$/;"	m	struct:_PtlData	access:public
 key	json.h	/^	struct stack_elem { void *val; char *key; uint32_t key_length; } *stack;$/;"	m	struct:json_parser_dom::stack_elem	access:public
 key	libpurple/util.h	/^	gchar *key;$/;"	m	struct:_PurpleKeyValuePair	access:public
 key	protocol.h	/^    char *key;$/;"	m	struct:_PtlHeader	access:public
@@ -6273,7 +6284,8 @@ lose_gerror	libpurple/purple-client.c	/^lose_gerror(const char *prefix, GError *
 magic	libpurple/plugin.h	/^	unsigned int magic;$/;"	m	struct:_PurplePluginInfo	access:public
 main	libpurple/purple-client-example.c	/^int main (int argc, char **argv)$/;"	f	signature:(int argc, char **argv)
 main	test/gen_dec.c	/^int main()$/;"	f
-main	test/protocol_decrypt.c	/^int main()$/;"	f
+main	test/protocol_decrypt.c	/^int main() {$/;"	f
+main	test/protocol_encrypt.c	/^int main() $/;"	f
 main	test/protocol_send.c	/^int main()$/;"	f
 main	test/udp_test.c	/^int main() {$/;"	f
 main_hash	libpurple/desktopitem.c	/^	GHashTable *main_hash;$/;"	m	struct:_PurpleDesktopItem	file:	access:public
@@ -6640,6 +6652,8 @@ primary_attr_id	libpurple/status.c	/^	char *primary_attr_id;$/;"	m	struct:_Purpl
 primitive	libpurple/status.c	/^	PurpleStatusPrimitive primitive;$/;"	m	struct:_PurpleStatusType	file:	access:public
 primitive_scores	libpurple/status.c	/^static int primitive_scores[] =$/;"	v	file:
 print	libpurple/debug.h	/^	void (*print)(PurpleDebugLevel level, const char *category,$/;"	m	struct:__anon31	access:public
+printHex	test/testhelper.c	/^void printHex(unsigned char *byte, int len)$/;"	f	signature:(unsigned char *byte, int len)
+printHex	test/testhelper.h	/^void printHex(unsigned char *byte, int len);$/;"	p	signature:(unsigned char *byte, int len)
 print_binary_string	json.c	/^static int print_binary_string(json_printer *printer, const char *data, uint32_t length)$/;"	f	file:	signature:(json_printer *printer, const char *data, uint32_t length)
 print_indent	json.c	/^static int print_indent(json_printer *printer)$/;"	f	file:	signature:(json_printer *printer)
 print_string	json.c	/^static int print_string(json_printer *printer, const char *data, uint32_t length)$/;"	f	file:	signature:(json_printer *printer, const char *data, uint32_t length)
@@ -6665,16 +6679,17 @@ probe	libpurple/plugin.h	/^	gboolean (*probe)(PurplePlugin *plugin);$/;"	m	struc
 probe_cb	libpurple/plugin.c	/^static void (*probe_cb)(void *) = NULL;$/;"	v	file:
 probe_cb_data	libpurple/plugin.c	/^static void *probe_cb_data = NULL;$/;"	v	file:
 process	smsprpl.c	/^static void process (PurpleConnection *gc, json_val_t *root)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *root)
-process	smsprpl.h	/^static void process (PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
+process	smsprpl.h	/^static void process(PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
 process_auth	smsprpl.c	/^static void process_auth (PurpleConnection *gc, json_val_t *val)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
-process_auth	smsprpl.h	/^static void process_auth (PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
+process_auth	smsprpl.h	/^static void process_auth(PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
 process_chunked_data	libpurple/util.c	/^process_chunked_data(char *data, gsize *len)$/;"	f	file:	signature:(char *data, gsize *len)
-process_contact	smsprpl.c	/^static void process_contact (PurpleConnection *gc, json_val_t *val)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
+process_contact	smsprpl.c	/^static void process_contact (PurpleConnection *gc, json_val_t *val) {$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
 process_link	libpurple/util.c	/^process_link(GString *ret,$/;"	f	file:	signature:(GString *ret, const char *start, const char *c, int matchlen, const char *urlprefix, int inside_paren)
+process_logout	smsprpl.c	/^static void process_logout(PurpleConnection *gc, json_val_t *val) {$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
+process_logout	smsprpl.h	/^static void process_logout(PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
 process_msg	smsprpl.c	/^static void process_msg(PurpleConnection *gc, json_val_t *val)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
 process_msg	smsprpl.h	/^static void process_msg (PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
-process_noti	smsprpl.c	/^static void process_noti (PurpleConnection *gc, json_val_t *val)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
-process_noti	smsprpl.h	/^static void process_noti (PurpleConnection *gc, json_val_t *val);$/;"	p	signature:(PurpleConnection *gc, json_val_t *val)
+process_req	smsprpl.c	/^static void process_req(PurpleConnection *gc, json_val_t *val) {$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
 process_resp	smsprpl.c	/^static void process_resp (PurpleConnection *gc, json_val_t *val)$/;"	f	file:	signature:(PurpleConnection *gc, json_val_t *val)
 process_txt_log	libpurple/log.c	/^static char *process_txt_log(char *txt, char *to_free)$/;"	f	file:	signature:(char *txt, char *to_free)
 proto	libpurple/media/candidate.c	/^	PurpleMediaNetworkProtocol proto;$/;"	m	struct:_PurpleMediaCandidatePrivate	file:	access:public
@@ -6727,9 +6742,17 @@ protocol_parser_t	protocol.h	/^} protocol_parser_t;$/;"	t	typeref:struct:protoco
 protocol_plugins	libpurple/plugin.c	/^static GList *protocol_plugins = NULL;$/;"	v	file:
 protocol_pretty_val	protocol.c	/^int protocol_pretty_val(Buffer *ctx, json_val_t *val)$/;"	f	signature:(Buffer *ctx, json_val_t *val)
 protocol_pretty_val	protocol.h	/^int protocol_pretty_val(Buffer *ctx, json_val_t *val);$/;"	p	signature:(Buffer *ctx, json_val_t *val)
+protocol_req_contact	protocol.c	/^int protocol_req_contact(UdpSocket *sock, PtlHeader *header)$/;"	f	signature:(UdpSocket *sock, PtlHeader *header)
+protocol_req_contact	protocol.h	/^int protocol_req_contact(UdpSocket *sock, PtlHeader *header);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header)
 protocol_send_auth	protocol.c	/^int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd)$/;"	f	signature:(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd)
 protocol_send_auth	protocol.h	/^int protocol_send_auth(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header, const char *user, const char *pwd)
-protocol_send_val	protocol.c	/^int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val)$/;"	f	signature:(UdpSocket *sock, PtlHeader *header, json_val_t *val)
+protocol_send_keepalive	protocol.c	/^int protocol_send_keepalive(UdpSocket *sock, PtlHeader *header) {$/;"	f	signature:(UdpSocket *sock, PtlHeader *header)
+protocol_send_keepalive	protocol.h	/^int protocol_send_keepalive(UdpSocket *sock, PtlHeader *header);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header)
+protocol_send_logout	protocol.c	/^int protocol_send_logout(UdpSocket *sock, PtlHeader *header) {$/;"	f	signature:(UdpSocket *sock, PtlHeader *header)
+protocol_send_logout	protocol.h	/^int protocol_send_logout(UdpSocket *sock, PtlHeader *header);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header)
+protocol_send_msg	protocol.c	/^int protocol_send_msg(UdpSocket *sock, PtlHeader *header, const char *who, const char *msg)$/;"	f	signature:(UdpSocket *sock, PtlHeader *header, const char *who, const char *msg)
+protocol_send_msg	protocol.h	/^int protocol_send_msg(UdpSocket *sock, PtlHeader *header, const char *who, const char *message);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header, const char *who, const char *message)
+protocol_send_val	protocol.c	/^int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val) {$/;"	f	signature:(UdpSocket *sock, PtlHeader *header, json_val_t *val)
 protocol_send_val	protocol.h	/^int protocol_send_val(UdpSocket *sock, PtlHeader *header, json_val_t *val);$/;"	p	signature:(UdpSocket *sock, PtlHeader *header, json_val_t *val)
 protocol_set_key	protocol.c	/^int protocol_set_key(PtlHeader *header, char *user, char *pwd)$/;"	f	signature:(PtlHeader *header, char *user, char *pwd)
 protocol_set_key	protocol.h	/^int protocol_set_key(PtlHeader *header, char *user, char *pwd);$/;"	p	signature:(PtlHeader *header, char *user, char *pwd)
@@ -10380,6 +10403,7 @@ rename_group	libpurple/prpl.h	/^	void (*rename_group)(PurpleConnection *, const 
 reply_cb	libpurple/stun.c	/^static void reply_cb(gpointer data, gint source, PurpleInputCondition cond) {$/;"	f	file:	signature:(gpointer data, gint source, PurpleInputCondition cond)
 report_disconnect	libpurple/connection.h	/^	void (*report_disconnect)(PurpleConnection *gc, const char *text);$/;"	m	struct:__anon75	access:public
 report_disconnect_reason	libpurple/connection.h	/^	void (*report_disconnect_reason)(PurpleConnection *gc,$/;"	m	struct:__anon75	access:public
+req_timeout	smsprpl.h	/^    guint req_timeout;$/;"	m	struct:_PtlData	access:public
 request	libpurple/util.c	/^	char *request;$/;"	m	struct:_PurpleUtilFetchUrlData	file:	access:public
 request_action	libpurple/request.h	/^	void *(*request_action)(const char *title, const char *primary,$/;"	m	struct:__anon148	access:public
 request_action_with_icon	libpurple/request.h	/^	void *(*request_action_with_icon)(const char *title, const char *primary,$/;"	m	struct:__anon148	access:public
@@ -10682,12 +10706,12 @@ smsprpl_debug_info	smsprpl.h	12;"	d
 smsprpl_debug_trace	smsprpl.h	18;"	d
 smsprpl_destroy	smsprpl.c	/^static void smsprpl_destroy(PurplePlugin *plugin) {$/;"	f	file:	signature:(PurplePlugin *plugin)
 smsprpl_init	smsprpl.c	/^static void smsprpl_init(PurplePlugin *plugin)$/;"	f	file:	signature:(PurplePlugin *plugin)
+smsprpl_keepalive	smsprpl.c	/^static void smsprpl_keepalive(PurpleConnection *gc) {$/;"	f	file:	signature:(PurpleConnection *gc)
 smsprpl_list_icon	smsprpl.c	/^static const char *smsprpl_list_icon(PurpleAccount *acct, PurpleBuddy *buddy)$/;"	f	file:	signature:(PurpleAccount *acct, PurpleBuddy *buddy)
 smsprpl_login	smsprpl.c	/^static void smsprpl_login(PurpleAccount *acct)$/;"	f	file:	signature:(PurpleAccount *acct)
 smsprpl_send_im	smsprpl.c	/^static int smsprpl_send_im(PurpleConnection *gc, const char *who,$/;"	f	file:	signature:(PurpleConnection *gc, const char *who, const char *message, PurpleMessageFlags flags)
 smsprpl_set_status	smsprpl.c	/^static void smsprpl_set_status(PurpleAccount *acct, PurpleStatus *status) {$/;"	f	file:	signature:(PurpleAccount *acct, PurpleStatus *status)
-smsprpl_status_text	smsprpl.c	/^static char *smsprpl_status_text(PurpleBuddy *buddy) {$/;"	f	file:	signature:(PurpleBuddy *buddy)
-smsprpl_status_types	smsprpl.c	/^static GList *smsprpl_status_types(PurpleAccount *acct)$/;"	f	file:	signature:(PurpleAccount *acct)
+smsprpl_status_types	smsprpl.c	/^static GList *smsprpl_status_types(PurpleAccount *acct) {$/;"	f	file:	signature:(PurpleAccount *acct)
 snarf_locale_from_key	libpurple/desktopitem.c	/^snarf_locale_from_key (const char *key)$/;"	f	file:	signature:(const char *key)
 socket_ready_cb	libpurple/proxy.c	/^socket_ready_cb(gpointer data, gint source, PurpleInputCondition cond)$/;"	f	file:	signature:(gpointer data, gint source, PurpleInputCondition cond)
 socket_type	libpurple/network.c	/^	int socket_type;$/;"	m	struct:_PurpleNetworkListenData	file:	access:public
@@ -10970,13 +10994,13 @@ u	libpurple/status.c	/^	} u;$/;"	m	struct:_PurplePresence	typeref:union:_PurpleP
 u	libpurple/value.h	/^	} u;$/;"	m	struct:__anon18	typeref:union:__anon18::__anon20	access:public
 u	protocol.h	/^    } u;$/;"	m	struct:json_val	typeref:union:json_val::__anon154	access:public
 uchar_data	libpurple/value.h	/^		unsigned char uchar_data;$/;"	m	union:__anon18::__anon19	access:public
-udp_close	udp.c	/^int udp_close(UdpSocket *socket) $/;"	f	signature:(UdpSocket *socket)
+udp_close	udp.c	/^int udp_close(UdpSocket *socket) {$/;"	f	signature:(UdpSocket *socket)
 udp_close	udp.h	/^int udp_close(UdpSocket *sock);$/;"	p	signature:(UdpSocket *sock)
 udp_debug_error	udp.h	20;"	d
 udp_debug_info	udp.h	16;"	d
 udp_debug_trace	udp.h	24;"	d
 udp_debug_trace	udp.h	28;"	d
-udp_init	udp.c	/^UdpSocket *udp_init(const char *ip, int port) $/;"	f	signature:(const char *ip, int port)
+udp_init	udp.c	/^UdpSocket *udp_init(const char *ip, int port) {$/;"	f	signature:(const char *ip, int port)
 udp_init	udp.h	/^UdpSocket *udp_init(const char *ip, int port);$/;"	p	signature:(const char *ip, int port)
 udp_init_broadcast	udp.c	/^UdpSocket *udp_init_broadcast(int port) {$/;"	f	signature:(int port)
 udp_init_broadcast	udp.h	/^UdpSocket *udp_init_broadcast(int port);$/;"	p	signature:(int port)
@@ -10984,7 +11008,7 @@ udp_input_read	smsprpl.h	/^    guint udp_input_read;$/;"	m	struct:_PtlData	acces
 udp_listen_cb	smsprpl.c	/^static void udp_listen_cb(int sockfd, gpointer data)$/;"	f	file:	signature:(int sockfd, gpointer data)
 udp_listen_data	smsprpl.h	/^    PurpleNetworkListenData *udp_listen_data;$/;"	m	struct:_PtlData	access:public
 udp_listenfd	smsprpl.h	/^    int udp_listenfd;$/;"	m	struct:_PtlData	access:public
-udp_send	udp.c	/^int udp_send(UdpSocket *sock, const void *buf, uint32_t length) $/;"	f	signature:(UdpSocket *sock, const void *buf, uint32_t length)
+udp_send	udp.c	/^int udp_send(UdpSocket *sock, const void *buf, uint32_t length) {$/;"	f	signature:(UdpSocket *sock, const void *buf, uint32_t length)
 udp_send	udp.h	/^int udp_send(UdpSocket *sock, const void *buf, uint32_t length);$/;"	p	signature:(UdpSocket *sock, const void *buf, uint32_t length)
 udp_send_sock	smsprpl.h	/^    UdpSocket *udp_send_sock;$/;"	m	struct:_PtlData	access:public
 udp_tag	udp.h	14;"	d
